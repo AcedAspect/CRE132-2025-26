@@ -1,0 +1,15 @@
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.GeneratedMSBuildEditorConfig.editorconfig
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.AssemblyInfoInputs.cache
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.AssemblyInfo.cs
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.csproj.CoreCompileInputs.cache
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.sourcelink.json
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\bin\Debug\net9.0\ConsoleApp1.exe
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\bin\Debug\net9.0\ConsoleApp1.deps.json
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\bin\Debug\net9.0\ConsoleApp1.runtimeconfig.json
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\bin\Debug\net9.0\ConsoleApp1.dll
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\bin\Debug\net9.0\ConsoleApp1.pdb
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.dll
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\refint\ConsoleApp1.dll
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.pdb
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ConsoleApp1.genruntimeconfig.cache
+D:\Niall-Mc\CRE132\code tests\ConsoleApp1\obj\Debug\net9.0\ref\ConsoleApp1.dll
