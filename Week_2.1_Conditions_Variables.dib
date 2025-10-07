@@ -116,7 +116,18 @@ else
 
 #!csharp
 
+using System;
 // Your password checker code goes here!
+string password = "Password1";
+string attempt = Console.ReadLine();
+if (attempt == password)
+{
+    Console.WriteLine("You May Enter");
+}
+else
+{
+    Console.WriteLine("Leave");
+}
 
 #!markdown
 
@@ -144,6 +155,10 @@ Note that there are also code keywords for defining information that cannot be c
 - `readonly`: Value can be set at declaration during runtime (when the program is running).
 
 **Exercise**: Change the data in the variables at the top of the program below with some invented student information, then run the code cell:
+
+#!markdown
+
+#r "nuget: Raylib-cs, 7.0.1"
 
 #!csharp
 
