@@ -1,0 +1,1261 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Nature of Code (Advanced) - Steering Behaviors
+
+## 🧠 Welcome to Artificial Intelligence: Making Games Feel Alive
+
+Today we enter the fascinating world of **Steering Behaviors** - the AI techniques that make game characters move naturally, pursue goals intelligently, and exhibit lifelike group behaviors. From enemy AI to flocking birds, these algorithms bring virtual worlds to life!
+
+---
+
+## 1. The Problem: Lifeless Movement
+
+Traditional game AI often feels robotic and predictable:
+
+**❌ Basic AI Problems:**
+- 🤖 **Robotic Movement**: Enemies that move in straight lines or fixed patterns
+- 🎯 **Poor Pursuit**: AI that can't smoothly chase or flee from targets
+- 👥 **No Group Behavior**: Multiple entities that don't interact naturally
+- 🔄 **Predictable Patterns**: AI that always does exactly the same thing
+- 🚧 **No Obstacle Avoidance**: AI that gets stuck on walls or other obstacles
+
+**Real games need AI that feels alive:**
+- 🏃 **Natural Movement**: Smooth acceleration, turning, and deceleration
+- 🎯 **Intelligent Pursuit**: AI that anticipates, surrounds, and coordinates
+- 🐦 **Flocking Behaviors**: Groups that move together like schools of fish or bird flocks
+- 🧭 **Goal-Oriented**: AI that seeks objectives while avoiding obstacles
+- 🤝 **Emergent Behaviors**: Complex group dynamics arising from simple rules
+
+**The Solution: Steering Behaviors!** 🧠✨
+
+---
+
+## 2. What Are Steering Behaviors?
+
+**Steering Behaviors** are AI algorithms that calculate forces to apply to moving entities, creating natural, lifelike movement patterns.
+
+**🔑 Key Concept**: Instead of directly setting position or velocity, we calculate **steering forces** that gradually change the entity's movement over time.
+
+```csharp
+// Traditional (robotic) approach:
+enemy.Position = player.Position; // Instantly teleport - feels unnatural
+
+// Steering behavior approach:
+Vector2 desiredVelocity = Seek(player.Position);
+Vector2 steeringForce = desiredVelocity - currentVelocity;
+ApplyForce(steeringForce); // Gradually steer toward target - feels natural
+```
+
+**🧩 Building Blocks:**
+- **Seek**: Move toward a target position
+- **Flee**: Move away from a target position  
+- **Pursue**: Chase a moving target by predicting where it will be
+- **Evade**: Flee from a moving target by predicting its path
+- **Wander**: Move in random, natural-looking patterns
+- **Separate**: Maintain distance from nearby entities
+- **Align**: Match the direction of nearby entities
+- **Cohesion**: Move toward the center of nearby entities
+
+
+---
+
+## 3. Foundation: The Autonomous Agent
+
+Every steering behavior starts with an **Autonomous Agent** - an entity that can move and make decisions:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Autonomous Agent - the foundation of all steering behaviors
+public class Agent
+{
+    public Vector2 Position;
+    public Vector2 Velocity;
+    public Vector2 Acceleration;
+    
+    public float MaxSpeed = 150.0f;  // Increased from 100.0f
+    public float MaxForce = 80.0f;   // Increased from 50.0f
+    public float Mass = 1.0f;
+    public float Radius = 8.0f;
+    
+    public Color AgentColor = Color.Blue;
+    
+    public Agent(float x, float y)
+    {
+        Position = new Vector2(x, y);
+        Velocity = Vector2.Zero;
+        Acceleration = Vector2.Zero;
+    }
+    
+    public void ApplyForce(Vector2 force)
+    {
+        // F = ma, so a = F/m
+        Vector2 f = force / Mass;
+        Acceleration += f;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        // Update velocity with acceleration
+        Velocity += Acceleration * deltaTime;
+        
+        // Limit velocity to maximum speed
+        if (Velocity.Length() > MaxSpeed)
+        {
+            Velocity = Vector2.Normalize(Velocity) * MaxSpeed;
+        }
+        
+        // Update position with velocity
+        Position += Velocity * deltaTime;
+        
+        // Reset acceleration (forces are applied each frame)
+        Acceleration = Vector2.Zero;
+    }
+    
+    public void Draw(Vector2 offset = default)
+    {
+        Vector2 drawPos = Position + offset;
+        
+        // Draw agent as a circle
+        Raylib.DrawCircle((int)drawPos.X, (int)drawPos.Y, Radius, AgentColor);
+        
+        // Draw velocity vector as a line
+        if (Velocity.Length() > 0.1f)
+        {
+            Vector2 velocityLine = Vector2.Normalize(Velocity) * (Radius + 15);
+            Vector2 lineEnd = drawPos + velocityLine;
+            Raylib.DrawLine((int)drawPos.X, (int)drawPos.Y, (int)lineEnd.X, (int)lineEnd.Y, Color.White);
+        }
+    }
+    
+    // Wrap around screen edges
+    public void WrapAroundScreen(int screenWidth, int screenHeight)
+    {
+        if (Position.X < 0) Position = new Vector2(screenWidth, Position.Y);
+        if (Position.X > screenWidth) Position = new Vector2(0, Position.Y);
+        if (Position.Y < 0) Position = new Vector2(Position.X, screenHeight);
+        if (Position.Y > screenHeight) Position = new Vector2(Position.X, 0);
+    }
+}
+
+// Test the basic agent with random movement
+Agent testAgent = new Agent(400, 300);
+
+Raylib.InitWindow(800, 600, "Autonomous Agent Foundation");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Apply a small random force each frame
+    Vector2 randomForce = new Vector2(
+        Raylib.GetRandomValue(-80, 80),
+        Raylib.GetRandomValue(-80, 80)
+    ) * 1.2f;  // Increased from 0.5f
+    
+    testAgent.ApplyForce(randomForce);
+    testAgent.Update(deltaTime);
+    testAgent.WrapAroundScreen(800, 600);
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    testAgent.Draw();
+    
+    Raylib.DrawText("Autonomous Agent Foundation", 10, 10, 16, Color.White);
+    Raylib.DrawText("Moves with random forces", 10, 30, 12, Color.LightGray);
+    Raylib.DrawText("White line shows velocity direction", 10, 50, 12, Color.LightGray);
+    
+    // Display agent info
+    Raylib.DrawText($"Position: ({testAgent.Position.X:F1}, {testAgent.Position.Y:F1})", 10, 80, 10, Color.Yellow);
+    Raylib.DrawText($"Velocity: {testAgent.Velocity.Length():F1} px/s", 10, 95, 10, Color.Yellow);
+    Raylib.DrawText($"Max Speed: {testAgent.MaxSpeed} px/s", 10, 110, 10, Color.Yellow);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🎉 Foundation Complete!** You've created an autonomous agent that can:
+- **Apply Forces**: Acceleration changes based on applied forces
+- **Natural Movement**: Smooth acceleration and velocity limiting
+- **Visual Feedback**: Velocity direction shown as white line
+- **Screen Wrapping**: Continues movement at screen edges
+
+
+---
+
+## 4. Core Steering Behavior: Seek
+
+**Seek** is the most fundamental steering behavior - moving toward a target position:
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Enhanced agent with Seek behavior
+public class SeekingAgent : Agent
+{
+    public SeekingAgent(float x, float y) : base(x, y)
+    {
+        AgentColor = Color.Green;
+    }
+    
+    public Vector2 Seek(Vector2 target)
+    {
+        // Calculate desired velocity: direction to target at maximum speed
+        Vector2 desired = target - Position;
+        
+        // Scale to maximum speed
+        if (desired.Length() > 0)
+        {
+            desired = Vector2.Normalize(desired) * MaxSpeed;
+        }
+        
+        // Steering force = desired velocity - current velocity
+        Vector2 steer = desired - Velocity;
+        
+        // Limit steering force to maximum force
+        if (steer.Length() > MaxForce)
+        {
+            steer = Vector2.Normalize(steer) * MaxForce;
+        }
+        
+        return steer;
+    }
+}
+
+// Interactive seek demonstration
+SeekingAgent seeker = new SeekingAgent(100, 100);
+Vector2 target = new Vector2(400, 300);
+
+Raylib.InitWindow(800, 600, "Seek Behavior");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Update target to mouse position
+    target = new Vector2(Raylib.GetMouseX(), Raylib.GetMouseY());
+    
+    // Apply seek force
+    Vector2 seekForce = seeker.Seek(target);
+    seeker.ApplyForce(seekForce);
+    
+    // Update agent
+    seeker.Update(deltaTime);
+    seeker.WrapAroundScreen(800, 600);
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw target (mouse position)
+    Raylib.DrawCircle((int)target.X, (int)target.Y, 12, Color.Red);
+    Raylib.DrawText("TARGET", (int)target.X + 15, (int)target.Y - 5, 10, Color.Red);
+    
+    // Draw seeker
+    seeker.Draw();
+    
+    // Draw connection line
+    Raylib.DrawLine((int)seeker.Position.X, (int)seeker.Position.Y, 
+                   (int)target.X, (int)target.Y, new Color(255, 255, 255, 100));
+    
+    Raylib.DrawText("Seek Behavior", 10, 10, 16, Color.White);
+    Raylib.DrawText("Green agent seeks red target (mouse)", 10, 30, 12, Color.LightGray);
+    Raylib.DrawText("Move mouse to change target position", 10, 50, 12, Color.LightGray);
+    
+    // Show distance to target
+    float distance = Vector2.Distance(seeker.Position, target);
+    Raylib.DrawText($"Distance to target: {distance:F1} pixels", 10, 80, 10, Color.Yellow);
+    Raylib.DrawText($"Seek force magnitude: {seekForce.Length():F1}", 10, 95, 10, Color.Yellow);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🎯 Seeking Success!** The green agent smoothly pursues the red target!
+
+**How Seek Works:**
+1. **Calculate desired velocity**: Direction to target at maximum speed
+2. **Calculate steering force**: Difference between desired and current velocity
+3. **Apply force**: Gradually changes velocity toward the target
+4. **Result**: Smooth, natural movement that slows down as it approaches
+
+
+---
+
+## 5. Core Steering Behavior: Flee
+
+**Flee** is the opposite of Seek - moving away from a target:
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Agent with both Seek and Flee behaviors
+public class SeekFleeAgent : Agent
+{
+    public SeekFleeAgent(float x, float y) : base(x, y)
+    {
+        AgentColor = Color.Purple;
+    }
+    
+    public Vector2 Seek(Vector2 target)
+    {
+        Vector2 desired = target - Position;
+        if (desired.Length() > 0)
+        {
+            desired = Vector2.Normalize(desired) * MaxSpeed;
+        }
+        Vector2 steer = desired - Velocity;
+        if (steer.Length() > MaxForce)
+        {
+            steer = Vector2.Normalize(steer) * MaxForce;
+        }
+        return steer;
+    }
+    
+    public Vector2 Flee(Vector2 target)
+    {
+        // Same as seek, but in the opposite direction
+        Vector2 desired = Position - target; // Note: Position - target (reversed)
+        if (desired.Length() > 0)
+        {
+            desired = Vector2.Normalize(desired) * MaxSpeed;
+        }
+        Vector2 steer = desired - Velocity;
+        if (steer.Length() > MaxForce)
+        {
+            steer = Vector2.Normalize(steer) * MaxForce;
+        }
+        return steer;
+    }
+    
+    public Vector2 FleeIfClose(Vector2 target, float fleeDistance = 100.0f)
+    {
+        float distance = Vector2.Distance(Position, target);
+        if (distance < fleeDistance)
+        {
+            return Flee(target);
+        }
+        return Vector2.Zero; // No fleeing needed
+    }
+}
+
+// Seek vs Flee demonstration
+SeekFleeAgent agent1 = new SeekFleeAgent(200, 200);
+agent1.AgentColor = Color.Green;
+
+SeekFleeAgent agent2 = new SeekFleeAgent(600, 400);
+agent2.AgentColor = Color.Red;
+
+Vector2 mouseTarget = new Vector2(400, 300);
+
+Raylib.InitWindow(800, 600, "Seek vs Flee Behaviors");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    mouseTarget = new Vector2(Raylib.GetMouseX(), Raylib.GetMouseY());
+    
+    // Green agent seeks the mouse
+    Vector2 seekForce = agent1.Seek(mouseTarget);
+    agent1.ApplyForce(seekForce);
+    
+    // Red agent flees from the mouse
+    Vector2 fleeForce = agent2.Flee(mouseTarget);
+    agent2.ApplyForce(fleeForce);
+    
+    // Update both agents
+    agent1.Update(deltaTime);
+    agent2.Update(deltaTime);
+    agent1.WrapAroundScreen(800, 600);
+    agent2.WrapAroundScreen(800, 600);
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw mouse target
+    Raylib.DrawCircle((int)mouseTarget.X, (int)mouseTarget.Y, 15, Color.Yellow);
+    Raylib.DrawText("MOUSE", (int)mouseTarget.X + 20, (int)mouseTarget.Y - 5, 10, Color.Yellow);
+    
+    // Draw agents
+    agent1.Draw();
+    agent2.Draw();
+    
+    // Draw connection lines
+    Raylib.DrawLine((int)agent1.Position.X, (int)agent1.Position.Y, 
+                   (int)mouseTarget.X, (int)mouseTarget.Y, new Color(0, 255, 0, 100));
+    Raylib.DrawLine((int)agent2.Position.X, (int)agent2.Position.Y, 
+                   (int)mouseTarget.X, (int)mouseTarget.Y, new Color(255, 0, 0, 100));
+    
+    Raylib.DrawText("Seek vs Flee Behaviors", 10, 10, 16, Color.White);
+    Raylib.DrawText("Green: Seeks mouse (attracted)", 10, 30, 12, Color.Green);
+    Raylib.DrawText("Red: Flees from mouse (repelled)", 10, 50, 12, Color.Red);
+    Raylib.DrawText("Move mouse to control both agents", 10, 70, 12, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🏃 Perfect Dual Behavior!** You can see how Seek and Flee are opposites:
+
+**Key Differences:**
+- **Seek**: `desired = target - position` (toward target)
+- **Flee**: `desired = position - target` (away from target)
+- **Same Algorithm**: Both use the same steering force calculation
+- **Natural Movement**: Both create smooth, realistic motion patterns
+
+
+---
+
+## 6. Advanced Behavior: Pursue (Intelligent Chasing)
+
+**Pursue** is smarter than Seek - it predicts where a moving target will be and heads there instead:
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Agent with advanced pursuit behavior
+public class PursuitAgent : Agent
+{
+    public PursuitAgent(float x, float y) : base(x, y)
+    {
+        AgentColor = Color.Orange;
+    }
+    
+    public Vector2 Pursue(Agent target)
+    {
+        // Calculate distance to target
+        Vector2 toTarget = target.Position - Position;
+        float distance = toTarget.Length();
+        
+        // Predict how long it will take to reach the target
+        float prediction = distance / MaxSpeed;
+        
+        // Predict where the target will be
+        Vector2 predictedPosition = target.Position + target.Velocity * prediction;
+        
+        // Seek the predicted position instead of current position
+        return Seek(predictedPosition);
+    }
+    
+    // Standard seek for comparison
+    public Vector2 Seek(Vector2 target)
+    {
+        Vector2 desired = target - Position;
+        if (desired.Length() > 0)
+        {
+            desired = Vector2.Normalize(desired) * MaxSpeed;
+        }
+        Vector2 steer = desired - Velocity;
+        if (steer.Length() > MaxForce)
+        {
+            steer = Vector2.Normalize(steer) * MaxForce;
+        }
+        return steer;
+    }
+}
+
+// Moving target for pursuit testing
+public class MovingTarget : Agent
+{
+    public MovingTarget(float x, float y) : base(x, y)
+    {
+        AgentColor = Color.Blue;
+        MaxSpeed = 120.0f;  // Increased from 80.0f
+    }
+    
+    public void Wander(float deltaTime)
+    {
+        // Add some random steering for wandering behavior
+        Vector2 randomSteer = new Vector2(
+            Raylib.GetRandomValue(-120, 120),
+            Raylib.GetRandomValue(-120, 120)
+        ) * 2.0f;  // Increased magnitude for more dynamic movement
+        
+        ApplyForce(randomSteer);
+    }
+}
+
+// Pursuit demonstration
+PursuitAgent pursuer = new PursuitAgent(100, 100);
+MovingTarget wanderingTarget = new MovingTarget(400, 300);
+
+bool showPrediction = true;
+
+Raylib.InitWindow(800, 600, "Pursuit Behavior");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Toggle prediction visualization
+    if (Raylib.IsKeyPressed(KeyboardKey.P)) showPrediction = !showPrediction;
+    
+    // Update wandering target
+    wanderingTarget.Wander(deltaTime);
+    wanderingTarget.Update(deltaTime);
+    wanderingTarget.WrapAroundScreen(800, 600);
+    
+    // Pursue the moving target
+    Vector2 pursuitForce = pursuer.Pursue(wanderingTarget);
+    pursuer.ApplyForce(pursuitForce);
+    pursuer.Update(deltaTime);
+    pursuer.WrapAroundScreen(800, 600);
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Calculate and draw prediction
+    Vector2 toTarget = wanderingTarget.Position - pursuer.Position;
+    float distance = toTarget.Length();
+    float prediction = distance / pursuer.MaxSpeed;
+    Vector2 predictedPos = wanderingTarget.Position + wanderingTarget.Velocity * prediction;
+    
+    if (showPrediction)
+    {
+        // Draw predicted position
+        Raylib.DrawCircle((int)predictedPos.X, (int)predictedPos.Y, 8, new Color(255, 0, 255, 150));
+        Raylib.DrawText("PREDICTED", (int)predictedPos.X + 15, (int)predictedPos.Y - 5, 8, Color.Magenta);
+        
+        // Draw prediction line
+        Raylib.DrawLine((int)wanderingTarget.Position.X, (int)wanderingTarget.Position.Y,
+                       (int)predictedPos.X, (int)predictedPos.Y, new Color(255, 0, 255, 100));
+        
+        // Draw pursuit line to predicted position
+        Raylib.DrawLine((int)pursuer.Position.X, (int)pursuer.Position.Y,
+                       (int)predictedPos.X, (int)predictedPos.Y, new Color(255, 165, 0, 100));
+    }
+    
+    // Draw agents
+    wanderingTarget.Draw();
+    pursuer.Draw();
+    
+    // Draw direct line for comparison
+    Raylib.DrawLine((int)pursuer.Position.X, (int)pursuer.Position.Y,
+                   (int)wanderingTarget.Position.X, (int)wanderingTarget.Position.Y, 
+                   new Color(255, 255, 255, 50));
+    
+    Raylib.DrawText("Pursuit Behavior", 10, 10, 16, Color.White);
+    Raylib.DrawText("Orange: Pursuer (predicts target movement)", 10, 30, 12, Color.Orange);
+    Raylib.DrawText("Cyan: Wandering target", 10, 50, 12, Color.Blue);
+    Raylib.DrawText("P: Toggle prediction visualization", 10, 70, 12, Color.LightGray);
+    
+    if (showPrediction)
+    {
+        Raylib.DrawText("Purple circle: Predicted target position", 10, 90, 10, Color.Magenta);
+        Raylib.DrawText("Orange line: Pursuit path to prediction", 10, 105, 10, Color.Orange);
+    }
+    
+    // Show technical info
+    Raylib.DrawText($"Distance: {distance:F1} px", 10, 130, 10, Color.Yellow);
+    Raylib.DrawText($"Prediction time: {prediction:F2} sec", 10, 145, 10, Color.Yellow);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🎯 Intelligent Pursuit!** Notice how the orange agent leads the target instead of chasing behind it!
+
+**How Pursue Works:**
+1. **Calculate Distance**: How far away is the target?
+2. **Predict Time**: How long to reach the target at max speed?
+3. **Predict Position**: Where will the target be in that time?
+4. **Seek Prediction**: Use normal Seek toward the predicted position
+5. **Result**: Intercepts moving targets instead of following behind them
+
+
+---
+
+## 7. Flocking Behaviors: Emergent Group Intelligence
+
+**Flocking** combines three simple rules to create complex group behaviors like bird flocks or fish schools:
+
+**🐦 The Three Rules of Flocking:**
+1. **Separation**: Avoid crowding neighbors
+2. **Alignment**: Steer toward average heading of neighbors  
+3. **Cohesion**: Steer toward average position of neighbors
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Flocking agent with all three behaviors
+public class Boid : Agent
+{
+    public float SeparationRadius = 25.0f;
+    public float NeighborRadius = 50.0f;
+    
+    public Boid(float x, float y) : base(x, y)
+    {
+        AgentColor = new Color(100, 150, 255, 255);
+        MaxSpeed = 90.0f;   // Increased from 60.0f
+        MaxForce = 45.0f;   // Increased from 30.0f
+        Radius = 5.0f;
+        
+        // Give boids initial random velocity to get them moving
+        Velocity = new Vector2(
+            Raylib.GetRandomValue(-40, 40),
+            Raylib.GetRandomValue(-40, 40)
+        );
+    }
+    
+    public Vector2 Separate(List<Boid> boids)
+    {
+        Vector2 steer = Vector2.Zero;
+        int count = 0;
+        
+        foreach (Boid other in boids)
+        {
+            float distance = Vector2.Distance(Position, other.Position);
+            if (distance > 0 && distance < SeparationRadius)
+            {
+                // Calculate vector pointing away from neighbor
+                Vector2 diff = Position - other.Position;
+                if (diff.Length() > 0)
+                {
+                    diff = Vector2.Normalize(diff);
+                    diff /= distance; // Weight by distance (closer = stronger)
+                    steer += diff;
+                    count++;
+                }
+            }
+        }
+        
+        if (count > 0)
+        {
+            steer /= count; // Average
+            steer = Vector2.Normalize(steer) * MaxSpeed;
+            steer -= Velocity;
+            if (steer.Length() > MaxForce)
+            {
+                steer = Vector2.Normalize(steer) * MaxForce;
+            }
+        }
+        
+        return steer;
+    }
+    
+    public Vector2 Align(List<Boid> boids)
+    {
+        Vector2 sum = Vector2.Zero;
+        int count = 0;
+        
+        foreach (Boid other in boids)
+        {
+            float distance = Vector2.Distance(Position, other.Position);
+            if (distance > 0 && distance < NeighborRadius)
+            {
+                sum += other.Velocity;
+                count++;
+            }
+        }
+        
+        if (count > 0)
+        {
+            sum /= count; // Average velocity
+            sum = Vector2.Normalize(sum) * MaxSpeed;
+            Vector2 steer = sum - Velocity;
+            if (steer.Length() > MaxForce)
+            {
+                steer = Vector2.Normalize(steer) * MaxForce;
+            }
+            return steer;
+        }
+        
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Cohesion(List<Boid> boids)
+    {
+        Vector2 sum = Vector2.Zero;
+        int count = 0;
+        
+        foreach (Boid other in boids)
+        {
+            float distance = Vector2.Distance(Position, other.Position);
+            if (distance > 0 && distance < NeighborRadius)
+            {
+                sum += other.Position;
+                count++;
+            }
+        }
+        
+        if (count > 0)
+        {
+            sum /= count; // Average position
+            return Seek(sum); // Seek the center
+        }
+        
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Seek(Vector2 target)
+    {
+        Vector2 desired = target - Position;
+        if (desired.Length() > 0)
+        {
+            desired = Vector2.Normalize(desired) * MaxSpeed;
+        }
+        Vector2 steer = desired - Velocity;
+        if (steer.Length() > MaxForce)
+        {
+            steer = Vector2.Normalize(steer) * MaxForce;
+        }
+        return steer;
+    }
+    
+    public void Flock(List<Boid> boids)
+    {
+        Vector2 sep = Separate(boids);
+        Vector2 ali = Align(boids);
+        Vector2 coh = Cohesion(boids);
+        
+        // Weight the forces
+        sep *= 1.5f; // Separation is most important
+        ali *= 1.0f; // Alignment at normal strength
+        coh *= 1.0f; // Cohesion at normal strength
+        
+        // Apply all forces
+        ApplyForce(sep);
+        ApplyForce(ali);
+        ApplyForce(coh);
+    }
+}
+
+
+// Amazing flocking demonstration
+List<Boid> flock = new List<Boid>();
+
+// Create a flock of boids
+for (int i = 0; i < 30; i++)
+{
+    float x = Raylib.GetRandomValue(50, 750);
+    float y = Raylib.GetRandomValue(50, 550);
+    flock.Add(new Boid(x, y));
+}
+
+Raylib.InitWindow(800, 600, "Flocking Behavior - Emergence");
+Raylib.SetTargetFPS(60);
+
+bool showNeighbors = false;
+bool showForces = false;
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Toggle display options
+    if (Raylib.IsKeyPressed(KeyboardKey.N)) showNeighbors = !showNeighbors;
+    if (Raylib.IsKeyPressed(KeyboardKey.F)) showForces = !showForces;
+    
+    // Add boid at mouse click
+    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+    {
+        flock.Add(new Boid(Raylib.GetMouseX(), Raylib.GetMouseY()));
+    }
+    
+    // Update all boids
+    foreach (Boid boid in flock)
+    {
+        boid.Flock(flock);
+        boid.Update(deltaTime);
+        boid.WrapAroundScreen(800, 600);
+    }
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(new Color(20, 20, 40, 255));
+    
+    // Draw neighbor connections if enabled
+    if (showNeighbors)
+    {
+        foreach (Boid boid in flock)
+        {
+            foreach (Boid other in flock)
+            {
+                float distance = Vector2.Distance(boid.Position, other.Position);
+                if (distance > 0 && distance < boid.NeighborRadius)
+                {
+                    Raylib.DrawLine((int)boid.Position.X, (int)boid.Position.Y,
+                                   (int)other.Position.X, (int)other.Position.Y,
+                                   new Color(100, 100, 100, 50));
+                }
+            }
+        }
+    }
+    
+    // Draw all boids
+    foreach (Boid boid in flock)
+    {
+        boid.Draw();
+        
+        // Draw neighbor radius if showing neighbors
+        if (showNeighbors)
+        {
+            Raylib.DrawCircleLines((int)boid.Position.X, (int)boid.Position.Y, 
+                                  boid.NeighborRadius, new Color(100, 100, 100, 100));
+        }
+    }
+    
+    // UI
+    Raylib.DrawText("Flocking Behavior - Emergent Intelligence", 10, 10, 16, Color.White);
+    Raylib.DrawText($"Boids: {flock.Count}", 10, 30, 12, Color.LightGray);
+    Raylib.DrawText("Click: Add boid", 10, 50, 12, Color.LightGray);
+    Raylib.DrawText("N: Toggle neighbor connections", 10, 70, 12, Color.LightGray);
+    
+    // Show behavior info
+    Raylib.DrawText("Three Rules Creating Complex Behavior:", 10, 110, 12, Color.Yellow);
+    Raylib.DrawText("1. Separation: Avoid crowding", 10, 130, 10, Color.SkyBlue);
+    Raylib.DrawText("2. Alignment: Match neighbor directions", 10, 145, 10, Color.Green);
+    Raylib.DrawText("3. Cohesion: Move toward group center", 10, 160, 10, Color.Orange);
+    
+    if (showNeighbors)
+    {
+        Raylib.DrawText("Gray lines: Neighbor connections", 10, 185, 10, Color.Gray);
+        Raylib.DrawText("Gray circles: Neighbor detection radius", 10, 200, 10, Color.Gray);
+    }
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🐦 Incredible Emergence!** Watch how simple rules create complex, lifelike group behavior!
+
+**What You're Seeing:**
+- **No Central Control**: No boid is "in charge" - the flock emerges from individual decisions
+- **Local Information**: Each boid only knows about nearby neighbors
+- **Complex Patterns**: Flocks split, merge, and flow around obstacles naturally
+- **Emergent Intelligence**: Group behavior appears intelligent despite simple individual rules
+
+**Real-World Applications:**
+- **Game AI**: Enemy squadrons, fish schools, bird flocks
+- **Crowd Simulation**: Realistic crowd movement in games
+- **Robotics**: Coordinated robot swarms
+- **Animation**: Believable group behaviors in films and games
+
+
+---
+
+## 8. Challenge Time! Master Steering Behaviors
+
+Test your AI programming skills with these progressive challenges:
+
+### Challenge 1: Predator-Prey Ecosystem 🦊🐰
+**Your Task**: Create a predator-prey system with realistic hunting and fleeing behaviors.
+
+**Requirements:**
+- Create Predator agents (foxes) that pursue Prey agents (rabbits)
+- Prey agents flee when predators get too close
+- Predators use pursuit behavior to intercept moving prey
+- Prey agents wander when no predators are nearby
+- Visual feedback showing detection radii and behavior states
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// TODO: Create your predator-prey system here
+
+public class Prey : Agent
+{
+    public float DetectionRadius = 80.0f;
+    public bool IsFleeingFromPredator = false;
+    
+    public Prey(float x, float y) : base(x, y)
+    {
+        // TODO: Set up prey properties (color, speed, etc.)
+    }
+    
+    public Vector2 FleeFromPredators(List<Predator> predators)
+    {
+        // TODO: Check for nearby predators and flee if found
+        // TODO: Set IsFleeingFromPredator flag appropriately
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Wander()
+    {
+        // TODO: Implement wandering behavior for when no predators nearby
+        return Vector2.Zero;
+    }
+    
+    public void UpdateBehavior(List<Predator> predators)
+    {
+        // TODO: Decide whether to flee or wander
+        // TODO: Apply appropriate steering forces
+    }
+}
+
+public class Predator : Agent
+{
+    public float HuntingRadius = 120.0f;
+    public Prey CurrentTarget = null;
+    
+    public Predator(float x, float y) : base(x, y)
+    {
+        // TODO: Set up predator properties (color, speed, etc.)
+    }
+    
+    public Prey FindNearestPrey(List<Prey> preyList)
+    {
+        // TODO: Find closest prey within hunting radius
+        return null;
+    }
+    
+    public Vector2 HuntPrey(Prey target)
+    {
+        // TODO: Use pursuit behavior to intercept moving prey
+        return Vector2.Zero;
+    }
+    
+    public void UpdateBehavior(List<Prey> preyList)
+    {
+        // TODO: Find target and apply hunting behavior
+        // TODO: Update CurrentTarget
+    }
+}
+
+// Test framework:
+List<Prey> preyList = new List<Prey>();
+List<Predator> predatorList = new List<Predator>();
+
+// TODO: Create initial populations
+// for (int i = 0; i < 15; i++) preyList.Add(new Prey(...));
+// for (int i = 0; i < 3; i++) predatorList.Add(new Predator(...));
+
+Console.WriteLine("Create a predator-prey ecosystem!");
+Console.WriteLine("Requirements: Pursuit, fleeing, detection radii, visual feedback");
+
+#!markdown
+
+**Expected Behavior:**
+- Green rabbits wander peacefully when no foxes nearby
+- Red foxes actively hunt the closest rabbit using pursuit
+- Rabbits flee when foxes get within detection radius
+- Visual indicators show detection/hunting radii
+- Realistic predator-prey chase dynamics
+
+---
+
+### Challenge 2: Obstacle Avoidance System 🚧
+**Your Task**: Create agents that can navigate around obstacles while still pursuing goals.
+
+**Requirements:**
+- Agents seek a target while avoiding static obstacles
+- Smooth navigation around circular and rectangular obstacles
+- Combine obstacle avoidance with seek behavior
+- Path visualization showing agent intentions
+- Multiple agents demonstrating obstacle navigation
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// TODO: Create your obstacle avoidance system
+
+public class Obstacle
+{
+    public Vector2 Position;
+    public float Radius;
+    public Color ObstacleColor;
+    
+    public Obstacle(float x, float y, float radius)
+    {
+        // TODO: Initialize obstacle properties
+    }
+    
+    public void Draw()
+    {
+        // TODO: Draw obstacle with visual feedback
+    }
+    
+    public bool ContainsPoint(Vector2 point)
+    {
+        // TODO: Check if point is inside obstacle
+        return false;
+    }
+}
+
+public class NavigatingAgent : Agent
+{
+    public float AvoidanceRadius = 60.0f;
+    
+    public NavigatingAgent(float x, float y) : base(x, y)
+    {
+        // TODO: Set up navigating agent properties
+    }
+    
+    public Vector2 AvoidObstacles(List<Obstacle> obstacles)
+    {
+        // TODO: Calculate avoidance force for nearby obstacles
+        // TODO: Look ahead in movement direction
+        // TODO: Steer away from obstacles in path
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Seek(Vector2 target)
+    {
+        // TODO: Standard seek behavior (copy from earlier examples)
+        return Vector2.Zero;
+    }
+    
+    public void NavigateToTarget(Vector2 target, List<Obstacle> obstacles)
+    {
+        // TODO: Combine seek and avoidance behaviors
+        // TODO: Weight forces appropriately
+    }
+}
+
+// Test framework with obstacles:
+List<Obstacle> obstacles = new List<Obstacle>
+{
+    // TODO: Create several obstacles in interesting positions
+    // new Obstacle(300, 200, 40),
+    // new Obstacle(500, 350, 50),
+    // etc.
+};
+
+List<NavigatingAgent> agents = new List<NavigatingAgent>();
+Vector2 globalTarget = new Vector2(750, 300);
+
+// TODO: Create multiple agents starting from different positions
+// for (int i = 0; i < 5; i++) agents.Add(new NavigatingAgent(...));
+
+Console.WriteLine("Create an obstacle avoidance system!");
+Console.WriteLine("Requirements: Seek + avoidance, path visualization, multiple agents");
+
+#!markdown
+
+**Expected Behavior:**
+- Agents seek target while smoothly avoiding obstacles
+- Path planning shows intended routes around obstacles
+- Multiple agents navigate independently without colliding
+- Realistic obstacle avoidance that doesn't feel robotic
+- Combination of steering forces working together harmoniously
+
+---
+
+### Challenge 3: Advanced AI Ecosystem 🌍
+**Your Task**: Create a complete ecosystem combining multiple steering behaviors.
+
+**Requirements:**
+- Multiple agent types with different AI behaviors
+- Flocking behavior for herding animals
+- Leader-following behavior for organized groups
+- Environmental factors (food sources, safe zones)
+- Advanced behaviors: wandering, patrolling, investigating
+- Interactive controls to modify AI parameters
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// TODO: Create your advanced AI ecosystem
+
+public enum AIState
+{
+    Wandering,
+    Seeking,
+    Fleeing,
+    Flocking,
+    Following,
+    Patrolling,
+    Investigating
+}
+
+public class AdvancedAgent : Agent
+{
+    public AIState CurrentState = AIState.Wandering;
+    public Vector2 PatrolPointA, PatrolPointB;
+    public Agent Leader;
+    public List<Vector2> InvestigationPoints = new List<Vector2>();
+    
+    // Behavior weights
+    public float SeekWeight = 1.0f;
+    public float FleeWeight = 1.5f;
+    public float FlockWeight = 1.0f;
+    public float WanderWeight = 0.5f;
+    
+    public AdvancedAgent(float x, float y) : base(x, y)
+    {
+        // TODO: Initialize advanced agent
+    }
+    
+    public Vector2 Wander()
+    {
+        // TODO: Implement sophisticated wandering
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Patrol()
+    {
+        // TODO: Move between patrol points
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Follow(Agent leader)
+    {
+        // TODO: Follow leader while maintaining distance
+        return Vector2.Zero;
+    }
+    
+    public Vector2 Investigate(Vector2 point)
+    {
+        // TODO: Move to investigate interesting points
+        return Vector2.Zero;
+    }
+    
+    public void UpdateAI(List<AdvancedAgent> allAgents, List<Vector2> foodSources, List<Vector2> threats)
+    {
+        // TODO: Complex state machine with multiple behaviors
+        // TODO: Switch between states based on environment
+        // TODO: Combine multiple steering forces intelligently
+    }
+}
+
+public class EcosystemManager
+{
+    public List<AdvancedAgent> Agents = new List<AdvancedAgent>();
+    public List<Vector2> FoodSources = new List<Vector2>();
+    public List<Vector2> Threats = new List<Vector2>();
+    public List<Vector2> SafeZones = new List<Vector2>();
+    
+    public void SpawnAgent(float x, float y)
+    {
+        // TODO: Create new agent with random AI settings
+    }
+    
+    public void UpdateEcosystem(float deltaTime)
+    {
+        // TODO: Update all agents and environmental factors
+    }
+    
+    public void DrawEcosystem()
+    {
+        // TODO: Draw all elements with visual indicators
+        // TODO: Show AI states, behavior forces, connections
+    }
+    
+    public void HandleInput()
+    {
+        // TODO: Interactive controls for AI parameters
+        // TODO: Add/remove environmental elements
+    }
+}
+
+// Test framework:
+// EcosystemManager ecosystem = new EcosystemManager();
+
+// TODO: Initialize ecosystem with agents and environmental elements
+
+Console.WriteLine("Create an advanced AI ecosystem!");
+Console.WriteLine("Requirements: Multiple behaviors, states, environmental factors, interaction");
+
+#!markdown
+
+**Expected Behavior:**
+- Multiple AI agent types with distinct behaviors
+- Complex state transitions based on environmental factors
+- Flocking, following, patrolling, and investigation behaviors
+- Interactive controls to modify AI parameters in real-time
+- Emergent ecosystem behaviors from agent interactions
+- Professional AI architecture suitable for commercial games
+
+---
+
+## 9. Challenge Reflection
+
+After completing the challenges, consider:
+
+1. **How do steering behaviors create more lifelike AI than simple movement?**
+2. **What makes flocking behavior appear intelligent despite simple rules?**
+3. **How can combining multiple steering forces create complex behaviors?**
+4. **What are the performance considerations for large numbers of AI agents?**
+5. **How do steering behaviors transfer to different types of games and simulations?**
+
+---
+
+## 10. Professional AI Applications
+
+**🎮 Game Applications:**
+- **Enemy AI**: Intelligent pursuit, flanking, and coordination
+- **NPC Behavior**: Realistic crowd movement and social interactions
+- **Animal Simulation**: Believable wildlife and creature behaviors
+- **Vehicle AI**: Car racing, traffic simulation, and naval movement
+
+**🏭 Beyond Games:**
+- **Robotics**: Swarm robotics and coordinated robot behavior
+- **Animation**: Crowd scenes and background character animation
+- **Simulation**: Traffic flow, evacuation planning, and social modeling
+- **Architecture**: Pedestrian flow analysis and space design
+
+**⚡ Performance Optimization:**
+- **Spatial Partitioning**: Only check nearby agents for neighbors
+- **Level of Detail**: Simpler AI for distant or less important agents
+- **Behavior Trees**: Hierarchical decision-making for complex AI
+- **State Machines**: Efficient behavior switching and management
+
+---
+
+## 11. What's Next in Week 6?
+
+Congratulations! You've mastered advanced AI programming with steering behaviors! In our final Week 6 sessions:
+
+- **Session 34**: **Nature of Code (Advanced): Cellular Automata** - Conway's Game of Life and emergent pattern systems
+- **Session 35**: **Final Project Workshop** - Combine everything you've learned into your unique game
+- **Session 36**: **Course Wrap-up & Next Steps** - Preparing for Unity and professional game development
+
+---
+
+## Key Concepts Mastered:
+
+- **Autonomous Agents**: Self-directed entities with position, velocity, and acceleration
+- **Core Behaviors**: Seek, flee, pursue, evade, and wander for natural movement
+- **Force-Based Movement**: Steering forces create realistic acceleration and deceleration
+- **Flocking Intelligence**: Separation, alignment, and cohesion create emergent group behavior
+- **Behavior Combination**: Weighted steering forces for complex, multi-goal AI
+- **State Machines**: Switching between different AI behaviors based on conditions
+- **Performance Patterns**: Efficient neighbor detection and behavior optimization
+- **Professional AI Architecture**: Industry-standard approaches to game AI programming
+
+**🧠 AI Programming Mastery Achieved!** You now understand advanced artificial intelligence techniques used in professional games! Your steering behavior knowledge transfers directly to Unity's NavMesh system, Unreal Engine's AI controllers, and other professional game engines!
+
+**🤖 Intelligent Systems Expert** - You're ready for the final advanced topics that will complete your journey to confident game programmer! 🎮✨

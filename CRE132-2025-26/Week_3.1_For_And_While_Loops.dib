@@ -1,0 +1,275 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# `for` and `while` Loops
+
+## 1. The Power of Repetition
+
+Imagine you want to draw 100 stars on the screen, or check the position of 50 enemies, or fire 20 bullets. Would you copy and paste the same code over and over? That would be a nightmare! 
+
+**Loops** are a way to execute a block of code multiple times without rewriting it. They are a fundamental concept in programming that allows us to manage complexity and automate repetitive tasks.
+
+There are two main types of loops we will use in C#: the `for` loop and the `while` loop.
+
+---
+
+## 2. The `for` Loop
+
+The `for` loop is perfect when you know exactly **how many times** you want to repeat an action.
+
+Its syntax looks a bit complex at first, but it's made of three parts:
+
+```csharp
+for (initializer; condition; iterator)
+{
+    // Code to repeat
+}
+```
+
+1.  **Initializer:** A variable is created to act as a counter. This part runs only **once** at the very beginning. (e.g., `int i = 0`)
+2.  **Condition:** The loop will continue to run as long as this condition is `true`. It is checked **before** each repetition. (e.g., `i < 10`)
+3.  **Iterator:** An action to perform **after** each repetition. This is usually used to increase the counter. (e.g., `i++`, which is shorthand for `i = i + 1`)
+
+Let's see an example that prints the numbers 0 through 9.
+
+#!csharp
+
+// i starts at 0; loop as long as i is less than 10; add 1 to i after each loop
+for (int i = 0; i < 10; i++)
+{
+    Console.WriteLine("The current number is: " + i);
+}
+
+#!markdown
+
+---
+
+## 3. The `while` Loop
+
+The `while` loop is different. It's used when you don't know how many times you need to loop, but you know the **condition that should stop the loop**.
+
+The `while` loop simply checks a condition. If it's `true`, the code block runs. It will repeat until the condition becomes `false`.
+
+```csharp
+while (condition)
+{
+    // Code to repeat
+}
+```
+
+You have already seen a `while` loop! The main game loop in Raylib is a `while` loop:
+`while (!Raylib.WindowShouldClose())`
+This translates to: "As long as the user has not tried to close the window, keep repeating the game logic and drawing code."
+
+**Warning:** It is possible to create an **infinite loop** if the condition never becomes false. This will freeze your program! Always make sure something inside the loop can eventually change the condition.
+
+#!csharp
+
+int countdown = 5;
+
+while (countdown > 0)
+{
+    Console.WriteLine(countdown);
+    countdown--; // Shorthand for countdown = countdown - 1;
+}
+
+Console.WriteLine("Blast off!");
+
+#!markdown
+
+## 4. Code Challenge: The 99 Bottles of Pop Song
+
+**Your Challenge:** Use a `for` loop or a `while` loop to print the lyrics to the classic song "99 Bottles of Pop on the Wall."
+
+The program should print:
+
+> 99 bottles of pop on the wall
+> 98 bottles of pop on the wall
+> ...
+> 1 bottle of pop on the wall
+
+*Hint: A `for` loop is often easier for this. You can make the counter variable count down instead of up by initializing it to 99 and using the `--` iterator.* `for (int i = 99; i > 0; i--)`
+
+#!csharp
+
+// Your loop to print the song lyrics goes here!
+
+#!markdown
+
+## 5. Summary
+
+Loops are essential for creating dynamic and efficient code. 
+-   Use a **`for` loop** when you know the number of repetitions.
+-   Use a **`while` loop** when you need to loop until a specific condition is met.
+
+In the next session, we will use loops to create interesting visual patterns in the console and in Raylib.
+
+#!markdown
+
+# Console Art with Loops
+
+## 1. Loops for Patterns
+
+Loops aren't just for counting; they are fantastic tools for creating patterns. By repeating a simple action and changing a small part of it with each iteration, we can generate complex-looking results from very simple code.
+
+Before we jump back into Raylib, let's practice this concept in the console.
+
+---
+
+## 2. Drawing a Line
+
+What if you wanted to draw a line of 10 stars (`**********`)? You could write `Console.Write("*")` ten times, or you could use a loop.
+
+Notice we are using `Console.Write()` instead of `Console.WriteLine()`. The `Write()` command prints to the console but does **not** add a new line at the end, allowing us to print things next to each other.
+
+#!csharp
+
+for (int i = 0; i < 10; i++)
+{
+    Console.Write("*");
+}
+// We add a new line at the end to keep things clean
+Console.WriteLine();
+
+#!markdown
+
+---
+
+## 3. Nested Loops: Drawing a Square
+
+This is where things get interesting. What if you want to draw a 5x5 square of stars? You need to draw a line of 5 stars, and you need to do that 5 times. This is a perfect job for a **nested loop**—a loop inside another loop!
+
+-   The **outer loop** will control the rows (the Y-axis).
+-   The **inner loop** will control the columns (the X-axis).
+
+After the inner loop finishes drawing one full row, the outer loop will call `Console.WriteLine()` to move the cursor down to the next line, ready to draw the next row.
+
+#!csharp
+
+int size = 5;
+
+// The outer loop handles the rows
+for (int y = 0; y < size; y++)
+{
+    // The inner loop handles the columns for each row
+    for (int x = 0; x < size; x++)
+    {
+        Console.Write("# "); // Write a character
+    }
+    // After the inner loop finishes, go to the next line
+    Console.WriteLine(); 
+}
+
+#!markdown
+
+## 4. Code Challenge: Draw a Triangle
+
+**Your Challenge:** Modify the nested loop code to draw a right-angled triangle, like this:
+
+```
+*
+**
+***
+****
+*****
+```
+
+*Hint: Look at the pattern. In row 0, you draw 1 star. In row 1, you draw 2 stars. In row `y`, you draw `y + 1` stars. How can you change the **condition** of the inner loop (`x < size`) so that the number of columns it draws depends on which row it's currently on?*
+
+#!csharp
+
+// Your triangle-drawing code goes here!
+
+#!markdown
+
+## 5. Summary
+
+You've now seen how simple loops can be combined to create structured patterns. This concept of an outer "Y" loop and an inner "X" loop is extremely common in 2D graphics and game development for iterating over grids or all the pixels on a screen.
+
+In the next session, we will take this exact concept and apply it in Raylib to create some visually interesting graphics.
+
+#!markdown
+
+# Raylib - Creating Patterns with Loops
+
+## 1. From Console to Canvas
+
+In the last session, we used nested loops to create patterns in the console. Now, we'll apply that same logic to our Raylib canvas. Instead of printing characters like `#` or `*`, we will be calling `Raylib.DrawRectangle()` or `Raylib.DrawCircle()` inside our loops.
+
+This technique is incredibly powerful and is used to create grids, fields of stars, levels made of tiles, and much more.
+
+---
+
+## 2. Drawing a Grid
+
+Let's start by drawing a simple grid of circles. We will use a nested `for` loop, just like in the console example. 
+
+-   The outer loop will iterate through the Y-axis.
+-   The inner loop will iterate through the X-axis.
+-   Inside the inner loop, we'll draw a circle at the current `(x, y)` position.
+
+We'll also add a `spacing` variable to control how far apart the shapes are.
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+const int screenWidth = 800;
+const int screenHeight = 600;
+
+Raylib.InitWindow(screenWidth, screenHeight, "Grid of Circles");
+Raylib.SetTargetFPS(60);
+
+int spacing = 50;
+
+while (!Raylib.WindowShouldClose())
+{
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkBlue);
+
+    for (int y = 0; y < screenHeight; y += spacing)
+    {
+        for (int x = 0; x < screenWidth; x += spacing)
+        {
+            Raylib.DrawCircle(x, y, 10, Color.Gold);
+        }
+    }
+
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+Notice in the `for` loop, our iterator is now `x += spacing` instead of `x++`. This makes our loop jump by `50` pixels each time instead of `1`, placing the circles correctly in the grid.
+
+---
+
+## 3. Weekly Challenge: Falling Rain
+
+**Your Challenge:** Let's end the week with a fun, animated challenge. Your task is to create a "rain" effect where lines fall from the top of the screen to the bottom.
+
+This is more complex and will require you to combine everything you've learned this week.
+
+**Steps & Hints:**
+
+1.  **You can't use loops for this (not yet!):** This is a trick question! A loop runs instantly. To create an animation over time, you need to use variables and update them in the main game loop. We will cover how to handle multiple raindrops with loops and arrays next week!
+2.  **Create variables:** You will need `int` or `float` variables to store the X and Y position of a single raindrop.
+3.  **Initialize the position:** Start the raindrop at a random X position at the top of the screen (`y = 0`). You can get a random number like this: `int randomX = new Random().Next(0, screenWidth);`
+4.  **Animate in the game loop:** Inside the `while` loop, increase the raindrop's Y position every frame to make it fall.
+5.  **Draw the raindrop:** Use `Raylib.DrawLine()` to draw a short vertical line at the raindrop's position.
+6.  **Reset the raindrop:** When the raindrop goes off the bottom of the screen (i.e., `y > screenHeight`), reset its position back to the top of the screen at a new random X position. This will make it look like an endless stream of rain.
+
+This is a challenging task, but it's a perfect preview of the kinds of things we'll be doing next week!
+
+#!csharp
+
+// Your rain effect code goes here!

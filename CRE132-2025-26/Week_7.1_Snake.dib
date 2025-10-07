@@ -1,0 +1,195 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Snake Game Code Explanation
+
+This is a classic **Snake game** implementation using Raylib. The game demonstrates key programming concepts including data structures, game loops, collision detection, and state management.
+
+## Game Structure
+
+### Core Components:
+- **Snake**: A list of `SnakeSegment` structs representing the snake's body
+- **Food**: A single segment that the snake must eat to grow
+- **Game State**: Tracks direction, game over status, and frame timing
+
+### Key Data Structures:
+```csharp
+struct SnakeSegment
+{
+    public int x;  // Grid position X
+    public int y;  // Grid position Y
+}
+```
+
+## Game Mechanics
+
+### Movement System:
+- **Grid-based**: Snake moves on a 20x20 pixel grid
+- **Direction Control**: Arrow keys change movement direction
+- **Prevention of Reverse**: Snake cannot move directly backwards
+- **Frame-based Movement**: Snake moves every 10 frames (6 moves per second)
+
+### Growth Mechanism:
+- **Food Collision**: When snake head touches food, snake grows
+- **New Food**: Random placement of new food after eating
+- **Body Addition**: New segment added to snake's tail
+
+### Collision Detection:
+1. **Self Collision**: Head hits any body segment → Game Over
+2. **Wall Collision**: Head hits screen boundaries → Game Over
+3. **Food Collision**: Head hits food → Snake grows
+
+## Code Flow
+
+### Main Game Loop:
+1. **Input Handling**: Process arrow key presses
+2. **Game Update**: Move snake, check collisions, update state
+3. **Rendering**: Draw snake, food, and UI elements
+
+### Update Logic:
+- Snake body follows the head (each segment takes previous segment's position)
+- Head moves in current direction
+- Collision checks determine game state
+- Food spawning when needed
+
+### Drawing:
+- Snake segments drawn as green rectangles
+- Food drawn as red rectangle
+- Game over message when applicable
+
+## Programming Concepts Demonstrated:
+- **Lists**: Dynamic snake body management
+- **Structs**: Simple data containers for positions
+- **Game Loops**: Continuous update and render cycle
+- **State Management**: Game over conditions
+- **Collision Detection**: Multiple collision types
+- **Input Handling**: Keyboard input processing
+
+---
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using System;
+using System.Collections.Generic;
+using Raylib_cs;
+using static Raylib_cs.Raylib;
+using static Raylib_cs.KeyboardKey;
+
+struct SnakeSegment
+{
+    public int x;
+    public int y;
+}
+
+const int screenWidth = 800;
+const int screenHeight = 600;
+const int gridSize = 20;
+const int initialLength = 5;
+
+InitWindow(screenWidth, screenHeight, "Snake Game");
+
+List<SnakeSegment> snake = new List<SnakeSegment>();
+for (int i = 0; i < initialLength; i++)
+{
+    snake.Add(new SnakeSegment { x = screenWidth / 2 / gridSize, y = screenHeight / 2 / gridSize });
+}
+
+SnakeSegment food = new SnakeSegment { x = new Random().Next(0, screenWidth / gridSize), y = new Random().Next(0, screenHeight / gridSize) };
+
+int dirX = 0;
+int dirY = -1;
+int framesCounter = 0;
+bool gameOver = false;
+
+SetTargetFPS(60);
+
+while (!WindowShouldClose())
+{
+    // Input handling
+    if (IsKeyDown(KeyboardKey.Right) && dirX != -1)
+    {
+        dirX = 1;
+        dirY = 0;
+    }
+    if (IsKeyDown(KeyboardKey.Left) && dirX != 1)
+    {
+        dirX = -1;
+        dirY = 0;
+    }
+    if (IsKeyDown(KeyboardKey.Up) && dirY != 1)
+    {
+        dirX = 0;
+        dirY = -1;
+    }
+    if (IsKeyDown(KeyboardKey.Down) && dirY != -1)
+    {
+        dirX = 0;
+        dirY = 1;
+    }
+
+    // Update game state
+    if (!gameOver && ++framesCounter >= 10)
+    {
+        framesCounter = 0;
+
+        // Move the snake
+        for (int i = snake.Count - 1; i > 0; i--)
+        {
+            snake[i] = snake[i - 1];
+        }
+        snake[0] = new SnakeSegment { x = snake[0].x + dirX, y = snake[0].y + dirY };
+
+        // Check for collisions with food
+        if (snake[0].x == food.x && snake[0].y == food.y)
+        {
+            // Add a new segment to the end of the snake
+            snake.Add(new SnakeSegment { x = snake[snake.Count - 1].x, y = snake[snake.Count - 1].y });
+            food = new SnakeSegment { x = new Random().Next(0, screenWidth / gridSize), y = new Random().Next(0, screenHeight / gridSize) };
+        }
+
+        // Check for collisions with self
+        for (int i = 1; i < snake.Count; i++)
+        {
+            if (snake[0].x == snake[i].x && snake[0].y == snake[i].y)
+            {
+                gameOver = true;
+            }
+        }
+
+        // Check for collisions with screen edges
+        if (snake[0].x < 0 || snake[0].x >= screenWidth / gridSize || snake[0].y < 0 || snake[0].y >= screenHeight / gridSize)
+        {
+            gameOver = true;
+        }
+    }
+
+    // Drawing
+    BeginDrawing();
+    ClearBackground(Color.LightGray);
+
+    // Draw the snake
+    foreach (var segment in snake)
+    {
+        DrawRectangle(segment.x * gridSize, segment.y * gridSize, gridSize - 1, gridSize - 1, Color.Green);
+    }
+
+    // Draw the food
+    DrawRectangle(food.x * gridSize, food.y * gridSize, gridSize - 1, gridSize - 1, Color.Red);
+
+    // Draw game over message
+    if (gameOver)
+    {
+        DrawText("GAME OVER", screenWidth / 2 - MeasureText("GAME OVER", 20) / 2, screenHeight / 2 - 10, 20, Color.Black);
+    }
+
+    EndDrawing();
+}
+
+CloseWindow();

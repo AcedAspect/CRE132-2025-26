@@ -1,0 +1,1254 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Mini-Game - Pong
+
+## 1. The Journey So Far: A Complete Physics Foundation
+
+Congratulations! Over the past four sessions, you've built a complete 2D physics foundation:
+
+### ✅ **Session 19 - Vectors**: The mathematical foundation
+- Position, velocity, and direction representation
+- Vector operations (add, subtract, multiply, normalize)
+
+### ✅ **Session 20 - The Mover**: Basic movement with vectors
+- Objects that move smoothly using velocity
+- Frame-independent movement patterns
+
+### ✅ **Session 21 - Forces**: Realistic acceleration and physics
+- Newton's Second Law (F = ma)
+- Force accumulation and realistic motion
+- Gravity, wind, friction, and seeking behaviours
+
+### ✅ **Session 22 - Collision Detection**: Knowing when objects interact
+- AABB (rectangle) collision detection
+- Circle collision detection
+- Mixed collision types for complex interactions
+
+### ✅ **Session 23 - Bouncing**: Realistic collision responses
+- Velocity reflection and momentum conservation
+- Energy dissipation through restitution
+- Surface properties and collision response
+
+### 🎯 **Today - Complete Game**: Putting it all together!
+We'll combine everything into a fully functional **Pong game** that demonstrates professional game development patterns.
+
+---
+
+## 2. Game State Management: The Foundation of Real Games
+
+Before building Pong, we need to understand how professional games are organized. Real games aren't just one big loop - they have different **states** that manage different parts of the experience.
+
+### Common Game States:
+- 🏠 **Menu**: Title screen, options, instructions
+- 🎮 **Playing**: Active gameplay with physics and controls
+- 🏆 **GameOver**: Show final score, restart options
+- ⏸️ **Paused**: Temporary game suspension
+- 📊 **HighScore**: Score display and entry
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using System.Numerics;
+
+// Game state enumeration
+public enum GameState
+{
+    Menu,
+    Playing,
+    Paused,
+    GameOver
+}
+
+// Simple game state manager
+public class GameStateManager
+{
+    public GameState CurrentState { get; private set; }
+    public GameState PreviousState { get; private set; }
+    
+    public GameStateManager()
+    {
+        CurrentState = GameState.Menu;
+        PreviousState = GameState.Menu;
+    }
+    
+    public void ChangeState(GameState newState)
+    {
+        PreviousState = CurrentState;
+        CurrentState = newState;
+        Console.WriteLine($"Game state changed: {PreviousState} → {CurrentState}");
+    }
+    
+    public bool IsState(GameState state)
+    {
+        return CurrentState == state;
+    }
+    
+    public bool JustEnteredState(GameState state)
+    {
+        return CurrentState == state && PreviousState != state;
+    }
+}
+
+// Test game state management
+Console.WriteLine("=== Game State Management Demo ===");
+
+GameStateManager stateManager = new GameStateManager();
+
+// Simulate game state transitions
+string[] simulatedInputs = { "start_game", "pause", "resume", "player_wins", "restart" };
+
+foreach (string input in simulatedInputs)
+{
+    Console.WriteLine($"\nPlayer input: {input}");
+    
+    switch (input)
+    {
+        case "start_game":
+            if (stateManager.IsState(GameState.Menu))
+                stateManager.ChangeState(GameState.Playing);
+            break;
+            
+        case "pause":
+            if (stateManager.IsState(GameState.Playing))
+                stateManager.ChangeState(GameState.Paused);
+            break;
+            
+        case "resume":
+            if (stateManager.IsState(GameState.Paused))
+                stateManager.ChangeState(GameState.Playing);
+            break;
+            
+        case "player_wins":
+            if (stateManager.IsState(GameState.Playing))
+                stateManager.ChangeState(GameState.GameOver);
+            break;
+            
+        case "restart":
+            if (stateManager.IsState(GameState.GameOver))
+                stateManager.ChangeState(GameState.Menu);
+            break;
+    }
+    
+    // Different behavior based on current state
+    switch (stateManager.CurrentState)
+    {
+        case GameState.Menu:
+            Console.WriteLine("Displaying menu screen...");
+            break;
+        case GameState.Playing:
+            Console.WriteLine("Running game physics and input...");
+            break;
+        case GameState.Paused:
+            Console.WriteLine("Game paused - physics stopped");
+            break;
+        case GameState.GameOver:
+            Console.WriteLine("Showing final score and restart options");
+            break;
+    }
+}
+
+#!markdown
+
+**Professional Pattern**: Notice how each state handles input and updates differently. This prevents bugs like "pausing during game over" or "starting a new game while already playing."
+
+---
+
+## 3. Building Pong Components: Ball, Paddle, and Game Logic
+
+Let's build Pong step by step, starting with the core components that use all our physics knowledge:
+
+#!csharp
+
+using System.Numerics;
+using Raylib_cs;
+
+// Pong Ball - combines movement, forces, collision detection, and bouncing
+public class PongBall
+{
+    public Vector2 Position;
+    public Vector2 Velocity;
+    public float Radius;
+    public float Speed;
+    public float MaxSpeed;
+    
+    private readonly float screenWidth;
+    private readonly float screenHeight;
+    
+    public PongBall(float screenW, float screenH)
+    {
+        screenWidth = screenW;
+        screenHeight = screenH;
+        Radius = 15;
+        Speed = 4;
+        MaxSpeed = 8;
+        Reset();
+    }
+    
+    public void Reset()
+    {
+        // Start in center
+        Position = new Vector2(screenWidth / 2, screenHeight / 2);
+        
+        // Random starting direction
+        float angle = Random.Shared.NextSingle() * 2 * MathF.PI;
+        Velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
+        Velocity = Vector2.Multiply(Vector2.Normalize(Velocity), Speed);
+    }
+    
+    public void Update()
+    {
+        // Apply movement (from Session 20)
+        Position = Vector2.Add(Position, Velocity);
+        
+        // Bounce off top and bottom walls (from Session 23)
+        if (Position.Y - Radius <= 0 || Position.Y + Radius >= screenHeight)
+        {
+            Velocity = new Vector2(Velocity.X, -Velocity.Y);
+            Position = new Vector2(Position.X, Math.Clamp(Position.Y, Radius, screenHeight - Radius));
+        }
+        
+        // Cap speed to prevent runaway velocity
+        if (Velocity.Length() > MaxSpeed)
+        {
+            Velocity = Vector2.Multiply(Vector2.Normalize(Velocity), MaxSpeed);
+        }
+    }
+    
+    public bool IsOffScreen()
+    {
+        return Position.X < -Radius || Position.X > screenWidth + Radius;
+    }
+    
+    public void BounceOffPaddle(Vector2 paddlePosition, float paddleHeight)
+    {
+        // Calculate where ball hit paddle (from -1 to 1)
+        float relativeIntersectY = (Position.Y - paddlePosition.Y) / (paddleHeight / 2);
+        
+        // Calculate bounce angle based on hit position
+        float bounceAngle = relativeIntersectY * MathF.PI / 4; // Max 45 degrees
+        
+        // Determine direction based on which side of screen
+        float direction = Position.X < screenWidth / 2 ? 1 : -1;
+        
+        // Set new velocity based on angle
+        float currentSpeed = Math.Min(Velocity.Length() * 1.05f, MaxSpeed); // Slight speed increase
+        Velocity = new Vector2(direction * MathF.Cos(bounceAngle) * currentSpeed,
+                              MathF.Sin(bounceAngle) * currentSpeed);
+    }
+    
+    public void DisplayInfo()
+    {
+        Console.WriteLine($"Ball: pos({Position.X:F1}, {Position.Y:F1}), vel({Velocity.X:F2}, {Velocity.Y:F2}), speed: {Velocity.Length():F2}");
+    }
+}
+
+// Pong Paddle - uses forces for smooth movement
+public class PongPaddle
+{
+    public Vector2 Position;
+    public Vector2 Velocity;
+    public float Width;
+    public float Height;
+    public float Speed;
+    public bool IsAI;
+    
+    private readonly float screenHeight;
+    
+    public PongPaddle(float x, float y, float screenH, bool isAI = false)
+    {
+        Position = new Vector2(x, y);
+        Velocity = Vector2.Zero;
+        Width = 15;
+        Height = 80;
+        Speed = 5;
+        IsAI = isAI;
+        screenHeight = screenH;
+    }
+    
+    public void Update()
+    {
+        // Apply movement
+        Position = Vector2.Add(Position, Velocity);
+        
+        // Keep paddle on screen
+        Position = new Vector2(Position.X, Math.Clamp(Position.Y, Height / 2, screenHeight - Height / 2));
+        
+        // Apply friction to slow down when no input
+        Velocity = Vector2.Multiply(Velocity, 0.85f);
+    }
+    
+    public void MoveUp()
+    {
+        if (!IsAI) // Only respond to player input if not AI
+        {
+            Vector2 upForce = new Vector2(0, -Speed);
+            Velocity = Vector2.Add(Velocity, upForce);
+        }
+    }
+    
+    public void MoveDown()
+    {
+        if (!IsAI) // Only respond to player input if not AI
+        {
+            Vector2 downForce = new Vector2(0, Speed);
+            Velocity = Vector2.Add(Velocity, downForce);
+        }
+    }
+    
+    // AI behavior using seeking force (from Session 21)
+    public void UpdateAI(Vector2 ballPosition)
+    {
+        if (!IsAI) return;
+        
+        // Simple AI: seek ball's Y position
+        float targetY = ballPosition.Y;
+        float currentY = Position.Y;
+        
+        // Calculate seeking force toward ball
+        float difference = targetY - currentY;
+        float seekStrength = 0.3f;
+        
+        if (Math.Abs(difference) > 10) // Dead zone to prevent jittering
+        {
+            Vector2 seekForce = new Vector2(0, Math.Sign(difference) * seekStrength * Speed);
+            Velocity = Vector2.Add(Velocity, seekForce);
+        }
+    }
+    
+    // Get collision rectangle for ball collision (from Session 22)
+    public Rectangle GetCollisionRect()
+    {
+        return new Rectangle((int)(Position.X - Width / 2), (int)(Position.Y - Height / 2), (int)Width, (int)Height);
+    }
+    
+    public void DisplayInfo()
+    {
+        string type = IsAI ? "AI" : "Player";
+        Console.WriteLine($"{type} Paddle: pos({Position.X:F1}, {Position.Y:F1}), vel({Velocity.X:F2}, {Velocity.Y:F2})");
+    }
+}
+
+// Test Pong components
+Console.WriteLine("=== Pong Components Test ===");
+
+PongBall ball = new PongBall(800, 600);
+PongPaddle playerPaddle = new PongPaddle(50, 300, 600, false);
+PongPaddle aiPaddle = new PongPaddle(750, 300, 600, true);
+
+Console.WriteLine("Initial states:");
+ball.DisplayInfo();
+playerPaddle.DisplayInfo();
+aiPaddle.DisplayInfo();
+
+// Simulate a few frames
+for (int frame = 1; frame <= 5; frame++)
+{
+    Console.WriteLine($"\n--- Frame {frame} ---");
+    
+    // Update all components
+    ball.Update();
+    playerPaddle.Update();
+    aiPaddle.UpdateAI(ball.Position);
+    aiPaddle.Update();
+    
+    // Show current states
+    ball.DisplayInfo();
+    aiPaddle.DisplayInfo();
+}
+
+#!markdown
+
+**Notice the Integration**:
+- 🏀 **Ball** uses velocity (Session 20), bouncing (Session 23), and collision detection (Session 22)
+- 🏓 **Paddle** uses force-based movement (Session 21) and collision rectangles (Session 22)
+- 🤖 **AI Paddle** uses seeking behavior (Session 21) to follow the ball
+
+---
+
+## 4. Complete Pong Game Structure
+
+Now let's build the complete game that manages everything:
+
+#!csharp
+
+using System.Numerics;
+using Raylib_cs;
+
+public class PongGame
+{
+    // Game state
+    public GameStateManager StateManager;
+    
+    // Game objects
+    public PongBall Ball;
+    public PongPaddle PlayerPaddle;
+    public PongPaddle AIPaddle;
+    
+    // Game settings
+    public int PlayerScore;
+    public int AIScore;
+    public int WinningScore;
+    
+    // Screen dimensions
+    private readonly float screenWidth;
+    private readonly float screenHeight;
+    
+    public PongGame(float screenW, float screenH)
+    {
+        screenWidth = screenW;
+        screenHeight = screenH;
+        
+        StateManager = new GameStateManager();
+        WinningScore = 5;
+        
+        InitializeGame();
+    }
+    
+    private void InitializeGame()
+    {
+        Ball = new PongBall(screenWidth, screenHeight);
+        PlayerPaddle = new PongPaddle(30, screenHeight / 2, screenHeight, false);
+        AIPaddle = new PongPaddle(screenWidth - 30, screenHeight / 2, screenHeight, true);
+        
+        PlayerScore = 0;
+        AIScore = 0;
+    }
+    
+    public void HandleInput(string input)
+    {
+        switch (StateManager.CurrentState)
+        {
+            case GameState.Menu:
+                if (input == "start")
+                {
+                    StateManager.ChangeState(GameState.Playing);
+                    InitializeGame();
+                }
+                break;
+                
+            case GameState.Playing:
+                if (input == "pause")
+                {
+                    StateManager.ChangeState(GameState.Paused);
+                }
+                else if (input == "up")
+                {
+                    PlayerPaddle.MoveUp();
+                }
+                else if (input == "down")
+                {
+                    PlayerPaddle.MoveDown();
+                }
+                break;
+                
+            case GameState.Paused:
+                if (input == "resume")
+                {
+                    StateManager.ChangeState(GameState.Playing);
+                }
+                break;
+                
+            case GameState.GameOver:
+                if (input == "restart")
+                {
+                    StateManager.ChangeState(GameState.Menu);
+                }
+                break;
+        }
+    }
+    
+    public void Update()
+    {
+        if (!StateManager.IsState(GameState.Playing)) return;
+        
+        // Update game objects
+        Ball.Update();
+        PlayerPaddle.Update();
+        AIPaddle.UpdateAI(Ball.Position);
+        AIPaddle.Update();
+        
+        // Check paddle collisions (from Session 22)
+        CheckPaddleCollisions();
+        
+        // Check scoring
+        CheckScoring();
+        
+        // Check win condition
+        CheckWinCondition();
+    }
+    
+    private void CheckPaddleCollisions()
+    {
+        // Player paddle collision (circle vs rectangle from Session 22)
+        Rectangle playerRect = PlayerPaddle.GetCollisionRect();
+        if (CircleRectangleCollision(Ball.Position, Ball.Radius, playerRect))
+        {
+            Ball.BounceOffPaddle(PlayerPaddle.Position, PlayerPaddle.Height);
+            Console.WriteLine("Player paddle hit!");
+        }
+        
+        // AI paddle collision
+        Rectangle aiRect = AIPaddle.GetCollisionRect();
+        if (CircleRectangleCollision(Ball.Position, Ball.Radius, aiRect))
+        {
+            Ball.BounceOffPaddle(AIPaddle.Position, AIPaddle.Height);
+            Console.WriteLine("AI paddle hit!");
+        }
+    }
+    
+    private bool CircleRectangleCollision(Vector2 circlePos, float radius, Rectangle rect)
+    {
+        // Find closest point on rectangle to circle center (from Session 22)
+        float closestX = Math.Max(rect.X, Math.Min(circlePos.X, rect.X + rect.Width));
+        float closestY = Math.Max(rect.Y, Math.Min(circlePos.Y, rect.Y + rect.Height));
+        
+        // Calculate distance from circle center to closest point
+        Vector2 closestPoint = new Vector2(closestX, closestY);
+        float distance = Vector2.Distance(circlePos, closestPoint);
+        
+        return distance <= radius;
+    }
+    
+    private void CheckScoring()
+    {
+        if (Ball.IsOffScreen())
+        {
+            if (Ball.Position.X < 0)
+            {
+                // Ball went off left side - AI scores
+                AIScore++;
+                Console.WriteLine($"AI Scores! Score: Player {PlayerScore} - AI {AIScore}");
+            }
+            else
+            {
+                // Ball went off right side - Player scores
+                PlayerScore++;
+                Console.WriteLine($"Player Scores! Score: Player {PlayerScore} - AI {AIScore}");
+            }
+            
+            Ball.Reset();
+        }
+    }
+    
+    private void CheckWinCondition()
+    {
+        if (PlayerScore >= WinningScore || AIScore >= WinningScore)
+        {
+            StateManager.ChangeState(GameState.GameOver);
+            string winner = PlayerScore >= WinningScore ? "Player" : "AI";
+            Console.WriteLine($"\n🏆 {winner} wins the game! Final score: Player {PlayerScore} - AI {AIScore}");
+        }
+    }
+    
+    public void DisplayGameInfo()
+    {
+        Console.WriteLine($"State: {StateManager.CurrentState}");
+        Console.WriteLine($"Score: Player {PlayerScore} - AI {AIScore}");
+        
+        if (StateManager.IsState(GameState.Playing))
+        {
+            Ball.DisplayInfo();
+        }
+    }
+}
+
+// Test the complete Pong game
+Console.WriteLine("=== Complete Pong Game Simulation ===");
+
+PongGame game = new PongGame(800, 600);
+
+// Simulate a complete game sequence
+string[] gameInputs = {
+    "start",     // Start the game
+    "down", "down", "up",  // Player movement
+    "down", "up", "down",  // More player movement
+    "pause",     // Pause game
+    "resume",    // Resume game
+    "up", "down", "up"     // Final movements
+};
+
+foreach (string input in gameInputs)
+{
+    Console.WriteLine($"\n=== Input: {input} ===");
+    game.HandleInput(input);
+    
+    // Update game multiple times to see progression
+    for (int i = 0; i < 3; i++)
+    {
+        game.Update();
+    }
+    
+    game.DisplayGameInfo();
+}
+
+#!markdown
+
+**Game Architecture**: Notice how the game cleanly separates concerns:
+- **State management** controls what updates and how input is handled
+- **Physics components** handle their own movement and collision
+- **Game logic** coordinates everything and manages scoring
+- **Update loop** runs physics only when appropriate
+
+---
+
+## 5. Interactive Raylib Pong Game
+
+Now for the exciting part - let's see our complete Pong game running with full visual feedback:
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Visual Pong implementation with all Week 4 concepts
+public class VisualPongGame
+{
+    // Game state
+    private GameStateManager stateManager;
+    
+    // Game objects (using all our physics concepts)
+    private PongBall ball;
+    private PongPaddle playerPaddle;
+    private PongPaddle aiPaddle;
+    
+    // Game settings
+    private int playerScore;
+    private int aiScore;
+    private readonly int winningScore = 3; // Reduced for demo
+    
+    // Screen dimensions
+    private readonly int screenWidth = 800;
+    private readonly int screenHeight = 600;
+    
+    // Visual effects
+    private float lastCollisionTime = 0;
+    private Vector2 lastCollisionPos = Vector2.Zero;
+    
+    public VisualPongGame()
+    {
+        stateManager = new GameStateManager();
+        InitializeGame();
+    }
+    
+    private void InitializeGame()
+    {
+        ball = new PongBall(screenWidth, screenHeight);
+        playerPaddle = new PongPaddle(30, screenHeight / 2, screenHeight, false);
+        aiPaddle = new PongPaddle(screenWidth - 30, screenHeight / 2, screenHeight, true);
+        
+        playerScore = 0;
+        aiScore = 0;
+    }
+    
+    public void HandleInput()
+    {
+        switch (stateManager.CurrentState)
+        {
+            case GameState.Menu:
+                if (Raylib.IsKeyPressed(KeyboardKey.Space))
+                {
+                    stateManager.ChangeState(GameState.Playing);
+                    InitializeGame();
+                }
+                break;
+                
+            case GameState.Playing:
+                // Player controls (force-based movement from Session 21)
+                if (Raylib.IsKeyDown(KeyboardKey.W) || Raylib.IsKeyDown(KeyboardKey.Up))
+                    playerPaddle.MoveUp();
+                if (Raylib.IsKeyDown(KeyboardKey.S) || Raylib.IsKeyDown(KeyboardKey.Down))
+                    playerPaddle.MoveDown();
+                    
+                if (Raylib.IsKeyPressed(KeyboardKey.P))
+                    stateManager.ChangeState(GameState.Paused);
+                break;
+                
+            case GameState.Paused:
+                if (Raylib.IsKeyPressed(KeyboardKey.P) || Raylib.IsKeyPressed(KeyboardKey.Space))
+                    stateManager.ChangeState(GameState.Playing);
+                break;
+                
+            case GameState.GameOver:
+                if (Raylib.IsKeyPressed(KeyboardKey.Space))
+                    stateManager.ChangeState(GameState.Menu);
+                break;
+        }
+    }
+    
+    public void Update()
+    {
+        if (!stateManager.IsState(GameState.Playing)) return;
+        
+        // Update all game objects (using physics from all sessions)
+        ball.Update();
+        playerPaddle.Update();
+        aiPaddle.UpdateAI(ball.Position);
+        aiPaddle.Update();
+        
+        // Check collisions and handle responses
+        CheckPaddleCollisions();
+        CheckScoring();
+        CheckWinCondition();
+        
+        // Update visual effects
+        lastCollisionTime += Raylib.GetFrameTime();
+    }
+    
+    private void CheckPaddleCollisions()
+    {
+        // Player paddle collision (Session 22 + Session 23)
+        Rectangle playerRect = playerPaddle.GetCollisionRect();
+        if (CircleRectangleCollision(ball.Position, ball.Radius, playerRect))
+        {
+            ball.BounceOffPaddle(playerPaddle.Position, playerPaddle.Height);
+            lastCollisionTime = 0;
+            lastCollisionPos = ball.Position;
+        }
+        
+        // AI paddle collision
+        Rectangle aiRect = aiPaddle.GetCollisionRect();
+        if (CircleRectangleCollision(ball.Position, ball.Radius, aiRect))
+        {
+            ball.BounceOffPaddle(aiPaddle.Position, aiPaddle.Height);
+            lastCollisionTime = 0;
+            lastCollisionPos = ball.Position;
+        }
+    }
+    
+    private bool CircleRectangleCollision(Vector2 circlePos, float radius, Raylib_cs.Rectangle rect)
+    {
+        float closestX = Math.Max(rect.X, Math.Min(circlePos.X, rect.X + rect.Width));
+        float closestY = Math.Max(rect.Y, Math.Min(circlePos.Y, rect.Y + rect.Height));
+        
+        Vector2 closestPoint = new Vector2(closestX, closestY);
+        float distance = Vector2.Distance(circlePos, closestPoint);
+        
+        return distance <= radius;
+    }
+    
+    private void CheckScoring()
+    {
+        if (ball.IsOffScreen())
+        {
+            if (ball.Position.X < 0)
+            {
+                aiScore++;
+            }
+            else
+            {
+                playerScore++;
+            }
+            
+            ball.Reset();
+        }
+    }
+    
+    private void CheckWinCondition()
+    {
+        if (playerScore >= winningScore || aiScore >= winningScore)
+        {
+            stateManager.ChangeState(GameState.GameOver);
+        }
+    }
+    
+    public void Draw()
+    {
+        Raylib.BeginDrawing();
+        Raylib.ClearBackground(Color.Black);
+        
+        switch (stateManager.CurrentState)
+        {
+            case GameState.Menu:
+                DrawMenu();
+                break;
+            case GameState.Playing:
+                DrawGame();
+                break;
+            case GameState.Paused:
+                DrawGame();
+                DrawPauseOverlay();
+                break;
+            case GameState.GameOver:
+                DrawGameOver();
+                break;
+        }
+        
+        Raylib.EndDrawing();
+    }
+    
+    private void DrawMenu()
+    {
+        // Title
+        Raylib.DrawText("PONG", screenWidth / 2 - 100, screenHeight / 2 - 100, 80, Color.White);
+        Raylib.DrawText("Week 4 Physics Demo", screenWidth / 2 - 120, screenHeight / 2 - 20, 24, Color.LightGray);
+        
+        // Instructions
+        Raylib.DrawText("SPACE to Start", screenWidth / 2 - 80, screenHeight / 2 + 40, 20, Color.Green);
+        Raylib.DrawText("W/S or Arrow Keys to Move", screenWidth / 2 - 130, screenHeight / 2 + 70, 16, Color.LightGray);
+        Raylib.DrawText("P to Pause", screenWidth / 2 - 50, screenHeight / 2 + 100, 16, Color.LightGray);
+        
+        // Physics concepts showcase
+        Raylib.DrawText("Featuring:", 50, screenHeight - 150, 20, Color.Yellow);
+        Raylib.DrawText("• Vector-based movement", 70, screenHeight - 120, 16, Color.White);
+        Raylib.DrawText("• Force-based paddle controls", 70, screenHeight - 100, 16, Color.White);
+        Raylib.DrawText("• Collision detection & response", 70, screenHeight - 80, 16, Color.White);
+        Raylib.DrawText("• Realistic bouncing physics", 70, screenHeight - 60, 16, Color.White);
+        Raylib.DrawText("• AI seeking behavior", 70, screenHeight - 40, 16, Color.White);
+    }
+    
+    private void DrawGame()
+    {
+        // Draw center line
+        for (int y = 0; y < screenHeight; y += 20)
+        {
+            Raylib.DrawRectangle(screenWidth / 2 - 2, y, 4, 10, Color.DarkGray);
+        }
+        
+        // Draw paddles
+        Raylib_cs.Rectangle playerRect = playerPaddle.GetCollisionRect();
+        Raylib_cs.Rectangle aiRect = aiPaddle.GetCollisionRect();
+        
+        Raylib.DrawRectangleRec(playerRect, Color.White);
+        Raylib.DrawRectangleRec(aiRect, Color.White);
+        
+        // Draw paddle velocity indicators (from Session 21)
+        if (playerPaddle.Velocity.Length() > 0.1f)
+        {
+            Vector2 velEnd = Vector2.Add(playerPaddle.Position, Vector2.Multiply(playerPaddle.Velocity, 5));
+            Raylib.DrawLineV(playerPaddle.Position, velEnd, Color.Green);
+        }
+        
+        if (aiPaddle.Velocity.Length() > 0.1f)
+        {
+            Vector2 velEnd = Vector2.Add(aiPaddle.Position, Vector2.Multiply(aiPaddle.Velocity, 5));
+            Raylib.DrawLineV(aiPaddle.Position, velEnd, Color.Red);
+        }
+        
+        // Draw ball
+        Raylib.DrawCircleV(ball.Position, ball.Radius, Color.White);
+        
+        // Draw ball velocity vector (from Session 20)
+        Vector2 ballVelEnd = Vector2.Add(ball.Position, Vector2.Multiply(ball.Velocity, 8));
+        Raylib.DrawLineV(ball.Position, ballVelEnd, Color.Yellow);
+        
+        // Draw collision effect
+        if (lastCollisionTime < 0.3f)
+        {
+            float alpha = 1.0f - (lastCollisionTime / 0.3f);
+            Color effectColor = new Color(255, 0, 255, alpha);
+            Raylib.DrawCircleV(lastCollisionPos, 30 + lastCollisionTime * 50, effectColor);
+        }
+        
+        // Draw ball trail (from Session 23)
+        for (int i = 1; i <= 3; i++)
+        {
+            Vector2 trailPos = Vector2.Subtract(ball.Position, Vector2.Multiply(ball.Velocity, i * 0.3f));
+            float trailAlpha = 0.3f / i;
+            Color trailColor = new Color(255, 255, 255, trailAlpha);
+            Raylib.DrawCircleV(trailPos, ball.Radius * (0.8f - i * 0.2f), trailColor);
+        }
+        
+        // Draw scores
+        Raylib.DrawText($"{playerScore}", screenWidth / 4, 50, 60, Color.White);
+        Raylib.DrawText($"{aiScore}", 3 * screenWidth / 4, 50, 60, Color.White);
+        
+        // Draw physics info
+        Raylib.DrawText($"Ball Speed: {ball.Velocity.Length():F1}", 10, 10, 16, Color.LightGray);
+        Raylib.DrawText("Yellow line = ball velocity", 10, 30, 14, Color.Yellow);
+        Raylib.DrawText("Green line = player force", 10, 50, 14, Color.Green);
+        Raylib.DrawText("Red line = AI force", 10, 70, 14, Color.Red);
+    }
+    
+    private void DrawPauseOverlay()
+    {
+        // Semi-transparent overlay
+        Raylib.DrawRectangle(0, 0, screenWidth, screenHeight, new Color(0, 0, 0, 0.5f));
+        
+        // Pause text
+        Raylib.DrawText("PAUSED", screenWidth / 2 - 80, screenHeight / 2 - 30, 40, Color.White);
+        Raylib.DrawText("Press P or SPACE to resume", screenWidth / 2 - 120, screenHeight / 2 + 20, 16, Color.LightGray);
+    }
+    
+    private void DrawGameOver()
+    {
+        string winner = playerScore >= winningScore ? "PLAYER WINS!" : "AI WINS!";
+        Color winnerColor = playerScore >= winningScore ? Color.Green : Color.Red;
+        
+        Raylib.DrawText(winner, screenWidth / 2 - 150, screenHeight / 2 - 50, 40, winnerColor);
+        Raylib.DrawText($"Final Score: {playerScore} - {aiScore}", screenWidth / 2 - 100, screenHeight / 2, 20, Color.White);
+        Raylib.DrawText("SPACE to play again", screenWidth / 2 - 80, screenHeight / 2 + 50, 16, Color.LightGray);
+        
+        // Game statistics
+        Raylib.DrawText("Physics Concepts Demonstrated:", screenWidth / 2 - 140, screenHeight / 2 + 100, 16, Color.Yellow);
+        Raylib.DrawText("✓ Vector mathematics", screenWidth / 2 - 100, screenHeight / 2 + 125, 14, Color.Green);
+        Raylib.DrawText("✓ Force-based movement", screenWidth / 2 - 100, screenHeight / 2 + 145, 14, Color.Green);
+        Raylib.DrawText("✓ Collision detection", screenWidth / 2 - 100, screenHeight / 2 + 165, 14, Color.Green);
+        Raylib.DrawText("✓ Realistic bouncing", screenWidth / 2 - 100, screenHeight / 2 + 185, 14, Color.Green);
+        Raylib.DrawText("✓ AI seeking behavior", screenWidth / 2 - 100, screenHeight / 2 + 205, 14, Color.Green);
+    }
+    
+    public void Run()
+    {
+        while (!Raylib.WindowShouldClose())
+        {
+            HandleInput();
+            Update();
+            Draw();
+        }
+    }
+}
+
+// Run the complete Pong game!
+VisualPongGame pongGame = new VisualPongGame();
+
+Raylib.InitWindow(800, 600, "Week 4, Session 24: Complete Pong Game - Physics Showcase");
+Raylib.SetTargetFPS(60);
+
+pongGame.Run();
+
+Raylib.CloseWindow();
+
+#!markdown
+
+## 🎮 **Your Complete Pong Game Features:**
+
+### **Physics Integration** (All Week 4 Concepts):
+- ⚡ **Vector-based movement**: Smooth ball and paddle motion
+- 🎯 **Force-based controls**: Realistic paddle acceleration and friction
+- 🔍 **Collision detection**: Circle-rectangle detection for ball-paddle interactions
+- 🏀 **Realistic bouncing**: Angle-based ball deflection with speed increase
+- 🤖 **AI seeking**: Computer paddle follows ball using force-based movement
+
+### **Professional Game Features**:
+- 🎛️ **State management**: Menu, playing, paused, and game over states
+- 🎨 **Visual effects**: Collision sparks, motion trails, velocity indicators
+- 🎮 **Responsive controls**: W/S or arrow keys for smooth movement
+- 📊 **Real-time physics display**: Shows velocity vectors and forces
+- 🏆 **Complete game loop**: Score tracking and win conditions
+
+### **Educational Value**:
+- 📐 **Velocity vectors** (yellow lines) show ball direction and speed
+- 💚 **Player forces** (green lines) show force-based paddle movement
+- ❤️ **AI forces** (red lines) show seeking behavior in action
+- 🌟 **Motion trails** demonstrate velocity and momentum
+- 💥 **Collision effects** highlight physics interactions
+
+---
+
+## 6. Challenge: Extend Your Pong Game
+
+Now that you have a complete Pong game, let's enhance it with additional physics concepts:
+
+### Challenge 1: Power-Up System ⚡
+**Your Task**: Add power-ups that modify game physics temporarily.
+
+**Requirements:**
+- Create different power-up types (speed boost, paddle size, ball effects)
+- Power-ups spawn randomly and disappear after time
+- Collision detection between ball and power-ups
+- Temporary physics modifications with visual feedback
+
+#!csharp
+
+using System.Numerics;
+using System.Collections.Generic;
+
+// TODO: Create your PowerUp class here
+public class PowerUp
+{
+    // Position, Type, Duration, Effect properties
+    // Update() method for movement and lifetime
+    // ApplyEffect(game) method to modify physics
+    // IsExpired() method to check if should be removed
+}
+
+// TODO: Create your PowerUpManager class here
+public class PowerUpManager
+{
+    // List of active power-ups
+    // SpawnPowerUp() method
+    // UpdatePowerUps() method
+    // CheckCollisions(ball) method
+    // DrawPowerUps() method
+}
+
+// TODO: Extend your Pong game with power-ups
+
+Console.WriteLine("=== Power-Up System Challenge ===");
+
+// Ideas for power-ups:
+// - Speed Boost: Increases ball speed temporarily
+// - Big Paddle: Makes paddle larger for easier hitting
+// - Multi Ball: Spawns additional balls
+// - Slow Motion: Reduces ball speed
+// - Curve Ball: Adds spin effects to ball movement
+// - Shield: Prevents scoring for a short time
+
+// Test framework (uncomment when ready):
+/*
+PowerUpManager powerUpManager = new PowerUpManager();
+
+for (int frame = 1; frame <= 20; frame++)
+{
+    Console.WriteLine($"\n--- Frame {frame} ---");
+    
+    // Randomly spawn power-ups
+    if (Random.Shared.Next(1, 6) == 1)
+    {
+        powerUpManager.SpawnPowerUp();
+    }
+    
+    // Update power-ups
+    powerUpManager.UpdatePowerUps();
+    
+    // Check collisions and apply effects
+    // powerUpManager.CheckCollisions(ball);
+    
+    Console.WriteLine($"Active power-ups: {powerUpManager.GetActivePowerUpCount()}");
+}
+*/
+
+#!markdown
+
+---
+
+### Challenge 2: Advanced Ball Physics 🎱
+**Your Task**: Enhance the ball with advanced physics properties.
+
+**Requirements:**
+- Add spin to the ball (rotational velocity)
+- Implement Magnus effect (spin affects trajectory)
+- Create different ball types with varying properties (mass, bounciness, size)
+- Show spin visually with rotation and curved trails
+
+#!csharp
+
+using System.Numerics;
+
+// TODO: Create your AdvancedBall class here
+public class AdvancedBall
+{
+    // Position, Velocity, Spin, Mass, Restitution properties
+    // ApplyMagnusForce() method for spin effects
+    // UpdateRotation() method for visual rotation
+    // CalculateSpinEffect(collisionNormal) method
+    // DrawWithSpin() method for advanced visuals
+}
+
+// TODO: Create your BallType enumeration and factory
+public enum BallType
+{
+    Normal,    // Standard ball
+    Heavy,     // High mass, low bounce
+    Bouncy,    // High restitution
+    Curve,     // High spin sensitivity
+    Chaos      // Random physics properties
+}
+
+// TODO: Implement advanced ball physics
+
+Console.WriteLine("=== Advanced Ball Physics Challenge ===");
+
+// Test different ball types and their spin effects
+// Show how Magnus force affects trajectory
+// Demonstrate different collision responses based on ball properties
+
+// Test framework (uncomment when ready):
+/*
+AdvancedBall[] testBalls = {
+    new AdvancedBall(BallType.Normal, 100, 100),
+    new AdvancedBall(BallType.Heavy, 200, 100),
+    new AdvancedBall(BallType.Bouncy, 300, 100),
+    new AdvancedBall(BallType.Curve, 400, 100)
+};
+
+for (int frame = 1; frame <= 10; frame++)
+{
+    Console.WriteLine($"\n--- Frame {frame} ---");
+    
+    foreach (var ball in testBalls)
+    {
+        ball.ApplyMagnusForce();
+        ball.Update();
+        ball.UpdateRotation();
+        
+        Console.WriteLine($"{ball.Type} ball: pos({ball.Position.X:F1}, {ball.Position.Y:F1}), spin: {ball.Spin:F2}");
+    }
+}
+*/
+
+#!markdown
+
+---
+
+### Challenge 3: Multiplayer Tournament System 🏆
+**Your Task**: Create a tournament system with multiple game modes.
+
+**Requirements:**
+- Support for 2-4 players with different control schemes
+- Multiple game modes (Classic, King of the Hill, Elimination)
+- Tournament bracket system with match progression
+- Statistics tracking (wins, losses, average rally length)
+
+#!csharp
+
+using System.Collections.Generic;
+
+// TODO: Create your Player class here
+public class Player
+{
+    // Name, Score, ControlScheme, Statistics properties
+    // InputHandler for different control schemes
+    // UpdateStatistics() method
+    // DisplayStats() method
+}
+
+// TODO: Create your Tournament class here
+public class Tournament
+{
+    // Players list, Bracket structure, CurrentMatch
+    // GenerateBracket() method
+    // AdvanceWinner() method
+    // IsComplete() method
+    // GetChampion() method
+}
+
+// TODO: Create your GameMode enumeration and logic
+public enum GameMode
+{
+    Classic,      // Traditional Pong
+    KingOfHill,   // Hold center position
+    Elimination,  // Last player standing
+    Team         // 2v2 cooperative play
+}
+
+// TODO: Implement tournament system
+
+Console.WriteLine("=== Multiplayer Tournament Challenge ===");
+
+// Create tournament with multiple players and game modes
+// Track statistics across matches
+// Show bracket progression and final standings
+
+// Test framework (uncomment when ready):
+/*
+Tournament tournament = new Tournament();
+tournament.AddPlayer(new Player("Alice", ControlScheme.WASD));
+tournament.AddPlayer(new Player("Bob", ControlScheme.Arrows));
+tournament.AddPlayer(new Player("Charlie", ControlScheme.IJKL));
+tournament.AddPlayer(new Player("Diana", ControlScheme.Numpad));
+
+tournament.SetGameMode(GameMode.Classic);
+tournament.GenerateBracket();
+
+while (!tournament.IsComplete())
+{
+    var match = tournament.GetCurrentMatch();
+    Console.WriteLine($"Match: {match.Player1.Name} vs {match.Player2.Name}");
+    
+    // Simulate match result
+    Player winner = Random.Shared.Next(2) == 0 ? match.Player1 : match.Player2;
+    tournament.AdvanceWinner(winner);
+    
+    Console.WriteLine($"Winner: {winner.Name}");
+}
+
+Player champion = tournament.GetChampion();
+Console.WriteLine($"\n🏆 Tournament Champion: {champion.Name}!");
+tournament.DisplayFinalStatistics();
+*/
+
+#!markdown
+
+**Success Criteria:**
+- **Challenge 1**: Power-ups create visible physics changes and enhance gameplay
+- **Challenge 2**: Ball spin affects trajectory realistically with visual feedback
+- **Challenge 3**: Tournament system manages multiple players and game modes
+
+**Advanced Physics Concepts:**
+- **Magnus Effect**: Spin-induced force perpendicular to velocity
+- **Coefficient of Restitution**: Energy conservation in different ball types
+- **Multi-object Systems**: Managing complex interactions between many game objects
+- **Game State Persistence**: Maintaining statistics and progression across matches
+
+---
+
+## 7. Reflection: Your Physics Programming Journey
+
+Congratulations! You've completed an incredible journey through 2D physics programming. Let's reflect on what you've accomplished:
+
+### **Week 4 Mastery Achieved** 🏆
+
+You've successfully learned and applied:
+
+1. **Vector Mathematics** → The foundation of all game physics
+2. **Movement Systems** → Smooth, frame-independent object motion
+3. **Force-Based Physics** → Realistic acceleration and natural-feeling controls
+4. **Collision Detection** → Essential algorithms for object interaction
+5. **Collision Response** → Realistic bouncing and momentum conservation
+6. **Complete Game Development** → Professional game structure and organization
+
+### **Professional Skills Gained** 💼
+
+- ✅ **Physics Engine Fundamentals**: Understanding how game engines work internally
+- ✅ **Performance Optimization**: Efficient collision detection and update patterns
+- ✅ **Code Organization**: Separating physics, rendering, and game logic
+- ✅ **State Management**: Professional game structure with multiple states
+- ✅ **Vector Operations**: The mathematics behind 3D graphics and advanced physics
+
+### **Real-World Applications** 🌍
+
+Your physics knowledge applies to:
+- **Game Development**: Unity, Unreal Engine, and custom engines
+- **Simulation Software**: Physics simulations and modeling
+- **Robotics**: Path planning and movement algorithms
+- **Computer Graphics**: Animation and visual effects
+- **Scientific Computing**: Particle systems and fluid dynamics
+
+---
+
+## 8. What's Next in Your Game Development Journey?
+
+### **Week 5 Preview**: Building a "Real" Game
+- Game state management and professional architecture
+- Menu systems and user interface design
+- Animation systems and sprite management
+- Audio integration and feedback systems
+- Polish and game feel optimization
+
+### **Advanced Physics Topics** (Future Learning):
+- **Rigid Body Dynamics**: Rotation and angular momentum
+- **Constraint Systems**: Joints and springs
+- **Fluid Simulation**: Particle-based water and gas effects
+- **Soft Body Physics**: Deformable objects and cloth simulation
+- **Optimization Techniques**: Spatial partitioning and broad-phase collision
+
+### **Unity Transition** (Your Ultimate Goal):
+Everything you've learned transfers directly to Unity:
+- **Vector2/Vector3** classes work identically
+- **Rigidbody** components use the same physics principles
+- **Collision detection** concepts are identical
+- **Force application** uses the same mathematics
+- **Game state management** patterns remain the same
+
+---
+
+## Key Concepts Mastered:
+- **Complete Game Development**: From concept to playable game
+- **Physics Integration**: Combining multiple physics systems seamlessly
+- **State Management**: Professional game structure and organization
+- **Performance Optimization**: Efficient update loops and collision checking
+- **User Experience**: Responsive controls and satisfying game feel
+- **Visual Feedback**: Using graphics to show physics concepts in action
+- **Code Architecture**: Maintainable, extensible game code patterns
+
+**Outstanding achievement!** You've built a complete physics foundation that will serve you throughout your game development career. The concepts you've mastered here are the same ones used in professional game engines and AAA game studios! 🎮🚀🏆
+
+The next step is applying these skills to even more complex games and eventually transitioning to Unity with a deep understanding of the physics principles that power modern game development!

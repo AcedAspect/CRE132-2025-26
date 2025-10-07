@@ -1,0 +1,475 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+## CRE132 Module Introduction
+
+This in-person course introduces programming in C# and fundamental game development concepts using two platforms: **Raylib** (a beginner-friendly graphics library for coding simple games from scratch) and **Unity** (a popular game engine using C# scripts). Each week, students learn core C# programming concepts and immediately apply them in both Raylib and Unity through examples and exercises. The course balances theory (programming concepts, game mechanics, design principles) with practice (coding activities), aiming for students to be able to **build a simple 2D game by the end**. A mid-course code quiz in Week 5 will assess C# fundamentals, and a final 2D top-down adventure game project is due by Week 12.
+
+Students are encouraged to work through these tutorials in their own time as it will help learning and preparation for assessments https://www.w3schools.com/cs/index.php.
+
+#!markdown
+
+# What are Polyglot Files?
+
+This file (with the `.dib` extension) is a special type of document that lets you:
+
+- **Mix text and code**: You can write explanations alongside actual code
+- **Run code right here**: Click a button to run code and see what happens
+- **Use different programming languages**: You can use C#, Python, or other languages in the same file
+- **Keep everything together**: Your notes and code stay in one place
+
+These files are like .ipynb files for Python.
+
+## How Polyglot Code Cells Work
+
+Think of code cells like building blocks that work together:
+
+### Order is Important
+- **Code you write earlier** can be used in code you write later
+- **You need to run cells from top to bottom** so everything works properly
+- **The computer remembers** what you did in previous cells
+
+### Simple Rules to Follow
+1. **Start at the top** and work your way down when you begin
+2. **Put important setup code first** (like importing libraries)
+3. **Start simple** then add more complex code later
+4. **Use text cells** to explain what your code does
+
+This type of file is great for:
+- **Learning programming** because you can explain each step
+- **Trying out code** and seeing what happens immediately
+- **Keeping notes** with your code so you remember what you did
+- **Sharing your work** with others who can follow along easily
+
+Let's start coding and see how this works!
+
+#!markdown
+
+# C# Program Structure
+
+## 1. The Anatomy of a C# Program
+
+Let's look at the most basic code example and break it down, piece by piece.
+
+```csharp
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("Hello, World!");
+    }
+}
+```
+
+This might look intimidating, but we can understand it by examining each part.
+
+---
+
+## 2. Keywords and Syntax Explained
+
+- **`using System;`**: This is a **directive**. `System` is a huge library of pre-built code that comes with C#. By "using" it, we're telling our program that we want to access the tools inside it. The `Console.WriteLine()` command we use to print text lives inside the `System` library.
+
+- **`class Program`**: A **class** is a blueprint for creating objects. For now, think of it as the main container for all the code for our application. All of our program's logic will live inside a class.
+
+- **`static void Main()`**: This is the **Main Method**. This is the most important part of the program. When you run your application, the computer looks for the `Main` method and starts executing the code inside it. It is the entry point of your program.
+
+- **`{ }` (Curly Braces)**: These define a **code block**. The code inside the `Main` method's curly braces is what gets executed when the program starts.
+
+- **`;` (Semicolon)**: In C#, the semicolon is used to mark the end of a statement. It's like the period at the end of a sentence. You must put one at the end of almost every line of code.
+
+---
+
+## 3. Code Challenge: Make it Your Own
+
+Now it's your turn to write some code. Below is a code cell with the same structure. 
+
+Change the text inside the `Console.WriteLine()` command. Make it print your name, or a welcome message of your choice.
+
+#!csharp
+
+Console.WriteLine("Hello, World!");
+
+#!markdown
+
+## 4. What is a Variable?
+
+Imagine you want your program to remember something, like the player's score, their name, or how much health they have left. A **variable** is a container in memory where you can store a piece of information. 
+
+You give each variable a name, and you can look at, use, or change the value you've stored.
+
+In C#, when you create a variable, you must declare its **data type**. The data type tells the computer what *kind* of information you plan to store.
+
+---
+
+## 5. Common Data Types
+
+There are many data types in C#, but let's start with the four most common ones you'll use in games.
+
+- `int` - Stands for **integer**. Used to store whole numbers (no decimals). Perfect for scores, counting lives, or level numbers.
+    - *Example:* `10`, `-5`, `125`
+
+- `float` - Stands for **floating-point number**. Used for numbers that have a decimal point. Essential for things that need precision, like a player's position, speed, or time.
+    - *Example:* `99.9f`, `0.01f`, `-3.14f` (Note the `f` at the end! This tells C# it's a float.)
+
+- `string` - Used to store text. Player names, messages, or dialogue are all strings.
+    - *Example:* `"Hello, World!"`, ``"Player1"` (Strings are always surrounded by double quotes.)
+
+- `bool` - Stands for **boolean**. Can only hold one of two values: `true` or `false`. Incredibly useful for tracking states, like `isJumping`, `hasKey`, or `isGameOver`.
+    - *Example:* `true`, `false`
+
+---
+
+## 6. Declaring and Using Variables
+
+To use a variable, you first **declare** it, then you **assign** it a value.
+
+```csharp
+// Declaration: type then name
+string playerName;
+
+// Assignment: variable name = value
+playerName = "Knight_123";
+```
+
+You can also do this in a single line:
+
+```csharp
+// Declaration and Assignment
+int score = 0;
+```
+
+Let's see it in action. Run the code cell below.
+
+#!csharp
+
+// Declaring and assigning different types of variables
+string characterName = "Gandalf";
+int characterLevel = 20;
+float attackPower = 150.5f;
+bool isFriendly = true;
+
+// Using the variables by printing them to the console
+Console.WriteLine("Character Name: " + characterName);
+Console.WriteLine("Level: " + characterLevel);
+Console.WriteLine("Attack Power: " + attackPower);
+Console.WriteLine("Is Friendly?: " + isFriendly);
+
+#!markdown
+
+Note how text can be added together using the ```+``` symbol. Though the ```+``` operator normally adds numbers, there are some contexts where is is *overidden* to add other objects or quantities togther.
+
+#!markdown
+
+## 7. Code Challenge: Create Your Own Character
+
+**Your Challenge:** In the code cell below, create a set of variables to describe a game character of your own invention. You must use at least one `string`, one `int`, one `float`, and one `bool`. Give them creative names and values, and then print them out to the console.
+
+#!csharp
+
+// Create your character's variables here
+
+
+// Print your character's information here
+
+#!markdown
+
+## 8. Variables Summary
+
+Variables are a fundamental concept in all of programming. They are essentially places in computer memory which store useful information that gives names or labels so we can access or change this information later. They are how we make our programs dynamic and responsive. 
+
+#!markdown
+
+## 9 Intro to Raylib
+
+### 9.1 Beyond the Console
+
+So far, all our programs have run in the console, the black text-based window. It's great for learning the basics, but games are visual. It's time to leave the console behind and create an actual game window on the screen.
+
+To do this, we will use **Raylib**, a free and easy-to-use library for game development.
+
+First, we need to tell our program that we want to use the Raylib library. We do this with a `using` statement at the top of our code.
+
+```csharp
+using Raylib_cs;
+```
+
+---
+
+### 9.2 The Simplest Game: An Empty Window
+
+The code below is the absolute minimum you need to create a game window with Raylib. Let's look at the key parts.
+
+- **`Raylib.InitWindow(800, 600, "My First Game");`**: This is the command that creates the window. We give it a width (800 pixels), a height (600 pixels), and a title to display at the top of the window.
+
+- **`while (!Raylib.WindowShouldClose())`**: This is the **Game Loop**. This loop will run continuously, once per frame, until the user closes the window (by clicking the 'X' button or pressing ESC). All of our game logic, drawing, and input handling will happen inside this loop.
+
+- **`Raylib.BeginDrawing();`** and **`Raylib.EndDrawing();`**: These two commands wrap all of our drawing code. You must call `BeginDrawing` before you draw anything, and `EndDrawing` after you are finished.
+
+- **`Raylib.ClearBackground(Color.WHITE);`**: This command clears the screen to a specific color at the start of each frame. If we didn't do this, we would see artifacts from the previous frame, creating a "smearing" effect.
+
+- **`Raylib.CloseWindow();`**: After the game loop has finished, this command closes the window and cleans up all the resources.
+
+Run the code below to see it in action!
+
+#!markdown
+
+First the Raylib-cs package is a C# wrapper for the Raylib library and needs to be installed. We can install the files directly via Microsoft's package repositiory using
+#r "nuget: Raylib-cs, 7.0.1" 
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+// Window dimensions
+const int screenWidth = 800;
+const int screenHeight = 600;
+
+// Initialization
+Raylib.InitWindow(screenWidth, screenHeight, "My First Game Window");
+Raylib.SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+
+// Main game loop
+while (!Raylib.WindowShouldClose()) // Detect window close button or ESC key
+{
+    // Drawing
+    Raylib.BeginDrawing();
+
+    Raylib.ClearBackground(Color.White); // Clear the background to a light grey
+
+    Raylib.DrawText("My First Raylib Window!", 190, 200, 20, Color.Black);
+
+    Raylib.EndDrawing();
+}
+
+// De-Initialization
+Raylib.CloseWindow();
+
+#!markdown
+
+### 9.3 Understanding the Code: `const` and Raylib Functions
+
+Let's break down some important parts of the code above:
+
+#### The `const` Keyword
+
+```csharp
+const int screenWidth = 800;
+const int screenHeight = 600;
+```
+
+The `const` keyword means **constant** - a variable that never changes once you set it. Here's why we use it:
+
+- **Screen dimensions don't change**: Once we decide our window is 800x600 pixels, it stays that way
+- **Prevents accidents**: You can't accidentally change the value later in your code
+- **Makes code clearer**: Other programmers know this value is meant to stay the same
+- **Better performance**: The computer can optimize constant values
+
+#### Key Raylib Functions Explained
+
+- **`Raylib.InitWindow(width, height, title)`**: Creates the game window
+  - Takes three parameters: width in pixels, height in pixels, and window title
+  - Must be called before any other Raylib functions
+
+- **`Raylib.SetTargetFPS(60)`**: Sets how many times per second the game updates
+  - 60 FPS means the game loop runs 60 times every second
+  - This makes the game run smoothly and consistently
+
+- **`Raylib.WindowShouldClose()`**: Checks if the user wants to quit
+  - Returns `true` when user clicks the X button or presses ESC
+  - We use `!` (NOT) to keep the loop running while it's `false`
+
+- **`Raylib.BeginDrawing()` and `Raylib.EndDrawing()`**: Mark the start and end of drawing
+  - Everything you want to appear on screen goes between these two commands
+  - Think of it like opening and closing a drawing program
+
+- **`Raylib.ClearBackground(Color.White)`**: Erases the screen with a color
+  - Like painting the entire screen with one color
+  - Must be done every frame or you'll see leftover drawings
+
+- **`Raylib.DrawText(text, x, y, size, color)`**: Draws text on the screen
+  - `x` and `y` are the position (in pixels from top-left corner)
+  - Size is how big the text should be
+  - Color determines what color the text appears
+
+- **`Raylib.CloseWindow()`**: Cleans up when the program ends
+  - Frees up computer memory and closes the window properly
+  - Always call this when your game is finished
+
+#!markdown
+
+### 9.4 Code Challenge: Customize Your Window
+
+**Your Challenge:** Take the code from the example above copy it into the cell below and make some changes.
+
+1.  Change the **width** and **height** of the window.
+2.  Change the **title** of the window.
+3.  Change the `ClearBackground` color. Try `Color.Blue`, `Color.Green`, or `Color.Black`.
+4.  Change the text that is displayed on the screen.
+5.  Change the position of the text to make it more centred. 
+
+Raylib C# types can be found here. This is quite complex for beginners, but for example, color.cs shows all the possible colour options.  
+
+https://github.com/raylib-cs/raylib-cs/tree/master/Raylib-cs/types
+
+#!csharp
+
+// Your customized window code goes here!
+
+#!markdown
+
+## 10. Drawing Shapes with Raylib
+Run the following and note the use of `using static Raylib_cs.Raylib;` so we don't have to put Raylib before the functions that we are using. `static` means that we are creating a reference that is fixed in stack type memory and so is a reference that is accessible across all of the code.
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using System.Numerics;
+using Raylib_cs;
+using static Raylib_cs.Raylib;
+
+// Initialize the window
+const int screenWidth = 800;
+const int screenHeight = 600;
+InitWindow(screenWidth, screenHeight, "Raylib [C#] - Drawing Shapes Example");
+
+// Set the target FPS
+SetTargetFPS(60);
+
+while (!WindowShouldClose())
+{
+    BeginDrawing();
+    ClearBackground(Color.White); // Clear the background to white
+
+    // Draw rectangles - xpos, ypos, width, height
+    DrawRectangle(100, 100, 200, 150, Color.Red);
+    DrawRectangleLines(100, 100, 200, 150, Color.Black);
+    
+    // Draw circles - xpos, ypos, radius
+    DrawCircle(400, 225, 50, Color.Blue);
+    DrawCircleLines(400, 225, 50, Color.Black);
+    
+    // Draw more shapes - xpos, ypos, width, height
+    DrawRectangle(500, 200, 100, 100, Color.Green);
+    DrawRectangleLines(500, 200, 100, 100, Color.Black);
+
+    // Draw more shapes - xpos, ypos, radius
+    DrawCircle(650, 300, 75, Color.Yellow);
+    DrawCircleLines(650, 300, 75, Color.Black);
+
+    EndDrawing();
+}
+
+CloseWindow();
+
+#!markdown
+
+**Challenge**:  Create variables for the shape positions, and sizes as follows and add to functions instead of numbers: 
+
+```C#
+// Define positions and sizes
+int rectX = 100;
+int rectY = 100;
+int rectWidth = 200;
+int rectHeight = 150;
+
+int circleX = 400;
+int circleY = 225;
+float circleRadius = 50.0f;
+```
+
+For a more advanced approach can you use Vector2 for each pair?
+
+#!markdown
+
+## Coding Tips 
+### Avoiding Magic Numbers
+
+**What are Magic Numbers?**
+Magic numbers are hard-coded values in your code that don't have clear meaning. They make code harder to read and maintain.
+
+**Bad Example (Magic Numbers):**
+```csharp
+public class PlayerController : MonoBehaviour
+{
+    void Update()
+    {
+        // What do these numbers mean?
+        transform.Translate(0, 0, 5 * Time.deltaTime);
+        
+        if (health < 0)
+        {
+            Destroy(gameObject);
+        }
+    }
+}
+```
+
+**Good Example (Named Variables):**
+```csharp
+public class PlayerController : MonoBehaviour
+{
+    public float moveSpeed = 5f;
+    public int minHealth = 0;
+    
+    void Update()
+    {
+        // Much clearer what this does
+        transform.Translate(0, 0, moveSpeed * Time.deltaTime);
+        
+        if (health < minHealth)
+        {
+            Destroy(gameObject);
+        }
+    }
+}
+```
+
+### Best Practices
+
+1. **Use Meaningful Variable Names and Camel case**
+   - `playerSpeed` instead of `s`
+   - `isPlayerAlive` instead of `alive`
+   - `enemyCount` instead of `count`
+
+2. **Add Comments to Explain Complex Logic**
+   ```csharp
+   // Check if player is touching the ground
+   if (Physics.Raycast(transform.position, Vector3.down, 1.1f))
+   {
+       isGrounded = true;
+   }
+   ```
+
+3. **Organize Your Code**
+   - Group related variables together
+   - Use regions to organize large scripts
+
+   ```C#
+   #region ThisIsACodeRegion
+      // int aNumber = 1;
+   #endregion
+   ```
+
+   - Keep methods short and focused
+
+4. **Test Your Code Frequently**
+   - Test small changes before adding more
+   - Use Debug.Log() to check values
+   - Play your game often during development
+
+5. **Plan Before You Code**
+   - Sketch out your game mechanics
+   - List the features you want
+   - Break complex tasks into smaller steps

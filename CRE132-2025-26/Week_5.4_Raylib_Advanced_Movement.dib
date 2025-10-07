@@ -1,0 +1,972 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Raylib - Advanced Movement Samples
+
+## 1. From Math to Magic: Sophisticated Movement
+
+In Session 19, you mastered the mathematical foundation of vectors. Now it's time to bring that knowledge to life with **sophisticated Mover objects** that create beautiful, lifelike animations in Raylib.
+
+Today we'll transform dry mathematics into visual poetry - objects that:
+- 🌊 **Flow** like water around obstacles
+- 🎯 **Seek** targets with intelligent pathfinding  
+- 🌪️ **Spiral** in mesmerizing patterns
+- ✨ **Leave trails** of light as they move
+- 🎨 **Change appearance** based on their motion
+- 🤖 **Exhibit lifelike** behaviors through simple rules
+
+This is where programming becomes art, and mathematics becomes beautiful motion.
+
+---
+
+## 2. The Professional Mover: Beyond Basic Movement
+
+Let's create a `Mover` class that integrates beautifully with Raylib and provides the foundation for all sophisticated movement:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+using System;
+using System.Collections.Generic;
+
+// Professional Mover class with advanced features
+public class Mover
+{
+    // Core physics properties
+    public Vector2 Position;
+    public Vector2 Velocity;
+    public Vector2 Acceleration;
+    public float Mass;
+    
+    // Visual properties
+    public float Radius;
+    public Color BaseColor;
+    public Color CurrentColor;
+    public float Alpha;
+    
+    // Advanced features
+    public float MaxSpeed;
+    public float MaxForce;
+    public List<Vector2> Trail;
+    public int MaxTrailLength;
+    public bool ShowVelocityVector;
+    public bool ShowAccelerationVector;
+    
+    // Lifespan and effects
+    public float Life;
+    public float MaxLife;
+    public bool IsAlive;
+    
+    public Mover(Vector2 startPosition, float mass = 1.0f)
+    {
+        Position = startPosition;
+        Velocity = Vector2.Zero;
+        Acceleration = Vector2.Zero;
+        Mass = mass;
+        
+        // Visual setup
+        Radius = Math.Max(mass * 8, 5);
+        BaseColor = Color.White;
+        CurrentColor = BaseColor;
+        Alpha = 1.0f;
+        
+        // Limits
+        MaxSpeed = 6.0f;
+        MaxForce = 0.2f;
+        
+        // Trail system
+        Trail = new List<Vector2>();
+        MaxTrailLength = 20;
+        ShowVelocityVector = false;
+        ShowAccelerationVector = false;
+        
+        // Lifespan
+        Life = MaxLife = 300.0f; // 5 seconds at 60 FPS
+        IsAlive = true;
+    }
+    
+    // Apply a force with magnitude limiting
+    public void ApplyForce(Vector2 force)
+    {
+        // F = ma, so a = F/m
+        Vector2 acceleration = force / Mass;
+        
+        // Limit force to prevent extreme accelerations
+        if (acceleration.Length() > MaxForce)
+        {
+            acceleration = Vector2.Normalize(acceleration) * MaxForce;
+        }
+        
+        Acceleration += acceleration;
+    }
+    
+    // Seek behavior - move toward a target
+    public Vector2 Seek(Vector2 target)
+    {
+        Vector2 desired = target - Position;
+        
+        // Calculate distance for arriving behavior
+        float distance = desired.Length();
+        
+        // Normalize and scale to maximum speed
+        desired = Vector2.Normalize(desired) * MaxSpeed;
+        
+        // Arriving behavior - slow down when close to target
+        if (distance < 50)
+        {
+            desired *= (distance / 50); // Scale down when close
+        }
+        
+        // Steering = Desired - Current Velocity
+        Vector2 steering = desired - Velocity;
+        
+        // Limit steering force
+        if (steering.Length() > MaxForce)
+        {
+            steering = Vector2.Normalize(steering) * MaxForce;
+        }
+        
+        return steering;
+    }
+    
+    // Flee behavior - move away from a target
+    public Vector2 Flee(Vector2 target)
+    {
+        Vector2 desired = Position - target; // Note: reversed from Seek
+        
+        // Only flee if close enough to the target
+        float distance = desired.Length();
+        if (distance > 100) return Vector2.Zero; // Don't flee if far away
+        
+        // Normalize and scale to maximum speed
+        if (distance > 0)
+        {
+            desired = Vector2.Normalize(desired) * MaxSpeed;
+        }
+        
+        // Steering = Desired - Current Velocity
+        Vector2 steering = desired - Velocity;
+        
+        // Limit steering force
+        if (steering.Length() > MaxForce)
+        {
+            steering = Vector2.Normalize(steering) * MaxForce;
+        }
+        
+        return steering;
+    }
+    
+    // Update physics and visual effects
+    public void Update()
+    {
+        // Core physics update
+        Velocity += Acceleration;
+        
+        // Limit velocity to max speed
+        if (Velocity.Length() > MaxSpeed)
+        {
+            Velocity = Vector2.Normalize(Velocity) * MaxSpeed;
+        }
+        
+        Position += Velocity;
+        
+        // Clear acceleration (forces applied fresh each frame)
+        Acceleration = Vector2.Zero;
+        
+        // Update trail
+        Trail.Add(Position);
+        if (Trail.Count > MaxTrailLength)
+        {
+            Trail.RemoveAt(0);
+        }
+        
+        // Update visual effects based on speed
+        float speedRatio = Velocity.Length() / MaxSpeed;
+        
+        // Color changes based on speed (blue = slow, red = fast)
+        CurrentColor = new Color(
+            (byte)(BaseColor.R + speedRatio * 100),
+            (byte)(BaseColor.G * (1 - speedRatio * 0.5f)),
+            (byte)(BaseColor.B + (1 - speedRatio) * 100),
+            (byte)(Alpha * 255)
+        );
+        
+        // Update lifespan
+        Life -= 1.0f;
+        if (Life <= 0)
+        {
+            IsAlive = false;
+        }
+        
+        // Fade out near end of life
+        if (Life < MaxLife * 0.3f)
+        {
+            Alpha = Life / (MaxLife * 0.3f);
+        }
+    }
+    
+    // Draw with advanced visual effects
+    public void Draw()
+    {
+        if (!IsAlive) return;
+        
+        // Draw trail
+        for (int i = 0; i < Trail.Count - 1; i++)
+        {
+            float trailAlpha = (float)i / Trail.Count * Alpha;
+            Color trailColor = Raylib.ColorAlpha(CurrentColor, trailAlpha * 0.3f);
+            
+            if (i < Trail.Count - 1)
+            {
+                Raylib.DrawLineV(Trail[i], Trail[i + 1], trailColor);
+            }
+        }
+        
+        // Draw main body with glow effect
+        Color glowColor = Raylib.ColorAlpha(CurrentColor, Alpha * 0.3f);
+        Raylib.DrawCircleV(Position, Radius + 5, glowColor);
+        Raylib.DrawCircleV(Position, Radius, Raylib.ColorAlpha(CurrentColor, Alpha));
+        
+        // Draw core
+        Raylib.DrawCircleV(Position, Radius * 0.6f, Color.White);
+        
+        // Draw velocity vector (optional)
+        if (ShowVelocityVector && Velocity.Length() > 0.1f)
+        {
+            Vector2 velocityEnd = Position + (Velocity * 15);
+            Raylib.DrawLineV(Position, velocityEnd, Color.Yellow);
+            
+            // Draw arrowhead
+            Vector2 arrowDir = Vector2.Normalize(Velocity);
+            Vector2 arrow1 = velocityEnd - (Vector2.Transform(arrowDir, Matrix3x2.CreateRotation(0.5f)) * 8);
+            Vector2 arrow2 = velocityEnd - (Vector2.Transform(arrowDir, Matrix3x2.CreateRotation(-0.5f)) * 8);
+            
+            Raylib.DrawLineV(velocityEnd, arrow1, Color.Yellow);
+            Raylib.DrawLineV(velocityEnd, arrow2, Color.Yellow);
+        }
+        
+        // Draw acceleration vector (optional)
+        if (ShowAccelerationVector && Acceleration.Length() > 0.01f)
+        {
+            Vector2 accelEnd = Position + (Acceleration * 100);
+            Raylib.DrawLineV(Position, accelEnd, Color.Red);
+        }
+    }
+    
+    // Screen wrapping
+    public void WrapScreen(int width, int height)
+    {
+        if (Position.X > width) Position = new Vector2(0, Position.Y);
+        if (Position.X < 0) Position = new Vector2(width, Position.Y);
+        if (Position.Y > height) Position = new Vector2(Position.X, 0);
+        if (Position.Y < 0) Position = new Vector2(Position.X, height);
+    }
+    
+    // Boundary bouncing
+    public void BounceScreen(int width, int height)
+    {
+        if (Position.X <= Radius || Position.X >= width - Radius)
+        {
+            Velocity = new Vector2(-Velocity.X, Velocity.Y);
+            Position = new Vector2(Math.Clamp(Position.X, Radius, width - Radius), Position.Y);
+        }
+        if (Position.Y <= Radius || Position.Y >= height - Radius)
+        {
+            Velocity = new Vector2(Velocity.X, -Velocity.Y);
+            Position = new Vector2(Position.X, Math.Clamp(Position.Y, Radius, height - Radius));
+        }
+    }
+}
+
+#!markdown
+
+**🎨 Professional Features Added:**
+- ✅ **Visual Trails**: Beautiful light trails following the mover
+- ✅ **Dynamic Colors**: Color changes based on speed (slow = blue, fast = red)
+- ✅ **Glow Effects**: Layered rendering for visual appeal
+- ✅ **Lifespan System**: Objects fade out and disappear naturally
+- ✅ **Behavioral Methods**: Seek, flee, and steering behaviors
+- ✅ **Debug Visualization**: Optional velocity and acceleration vectors
+- ✅ **Performance Limits**: MaxSpeed and MaxForce prevent runaway values
+
+---
+
+## 3. Movement Patterns: From Simple to Sophisticated
+
+Let's explore different movement patterns that create mesmerizing visual effects:
+
+#!csharp
+
+// Demonstration: Different Movement Behaviors
+List<Mover> movers = new List<Mover>();
+
+// Create movers with different behaviors
+Mover seeker = new Mover(new Vector2(100, 100)) { BaseColor = Color.Green, ShowVelocityVector = true };
+Mover wanderer = new Mover(new Vector2(200, 200)) { BaseColor = Color.Purple };
+Mover circler = new Mover(new Vector2(300, 300)) { BaseColor = Color.Orange };
+Mover bouncer = new Mover(new Vector2(400, 400)) { BaseColor = Color.Blue };
+
+movers.Add(seeker);
+movers.Add(wanderer);
+movers.Add(circler);
+movers.Add(bouncer);
+
+Raylib.InitWindow(800, 600, "The Mover - Sophisticated Behaviors");
+Raylib.SetTargetFPS(60);
+
+float time = 0;
+
+while (!Raylib.WindowShouldClose())
+{
+    time += 0.016f; // Approximate delta time
+    
+    Vector2 mousePos = new Vector2(Raylib.GetMouseX(), Raylib.GetMouseY());
+    
+    // Update each mover with different behaviors
+    foreach (Mover mover in movers)
+    {
+        if (mover == seeker)
+        {
+            // Seeker follows the mouse
+            Vector2 seekForce = mover.Seek(mousePos);
+            mover.ApplyForce(seekForce);
+        }
+        else if (mover == wanderer)
+        {
+            // Wanderer moves in random directions
+            Vector2 randomForce = new Vector2(
+                (float)(Math.Sin(time * 2 + mover.Position.X * 0.01f) * 0.1f),
+                (float)(Math.Cos(time * 1.5f + mover.Position.Y * 0.01f) * 0.1f)
+            );
+            mover.ApplyForce(randomForce);
+        }
+        else if (mover == circler)
+        {
+            // Circler moves in circular patterns
+            Vector2 center = new Vector2(400, 300);
+            Vector2 toCenter = center - mover.Position;
+            Vector2 circularForce = Vector2.Normalize(new Vector2(-toCenter.Y, toCenter.X)) * 0.1f;
+            
+            // Add slight inward force to maintain orbit
+            Vector2 centripetal = Vector2.Normalize(toCenter) * 0.05f;
+            mover.ApplyForce(circularForce + centripetal);
+        }
+        else if (mover == bouncer)
+        {
+            // Bouncer has constant velocity and bounces off walls
+            if (mover.Velocity.Length() < 2)
+            {
+                mover.ApplyForce(new Vector2(3, 2));
+            }
+        }
+        
+        mover.Update();
+        
+        // Apply boundary behaviors
+        if (mover == bouncer)
+        {
+            mover.BounceScreen(800, 600);
+        }
+        else
+        {
+            mover.WrapScreen(800, 600);
+        }
+    }
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw all movers
+    foreach (Mover mover in movers)
+    {
+        mover.Draw();
+    }
+    
+    // Draw mouse target for seeker
+    Raylib.DrawCircle(Raylib.GetMouseX(), Raylib.GetMouseY(), 5, Color.Red);
+    
+    // Instructions
+    Raylib.DrawText("GREEN: Seeks mouse", 10, 10, 16, Color.Green);
+    Raylib.DrawText("PURPLE: Wanders randomly", 10, 30, 16, Color.Purple);
+    Raylib.DrawText("ORANGE: Moves in circles", 10, 50, 16, Color.Orange);
+    Raylib.DrawText("Blue: Bounces off walls", 10, 70, 16, Color.Blue);
+    Raylib.DrawText("Move mouse to see seeking behavior", 10, 100, 14, Color.White);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🌟 Beautiful Behaviors:**
+- **Green Seeker**: Intelligently follows your mouse with smooth steering
+- **Purple Wanderer**: Explores randomly using Perlin noise-like movement
+- **Orange Circler**: Creates perfect orbital patterns around a center point
+- **Cyan Bouncer**: Classic physics with realistic wall bouncing
+
+Each behavior uses the same `Mover` class but with different force applications!
+
+---
+
+## 4. Advanced Steering: The Power of Intelligent Movement
+
+Now let's implement more sophisticated steering behaviors inspired by Craig Reynolds' work on autonomous agents:
+
+#!csharp
+
+// Enhanced Mover with advanced steering behaviors
+public class SteeringMover : Mover
+{
+    public float WanderAngle;
+    public float WanderChange;
+    
+    public SteeringMover(Vector2 startPosition, float mass = 1.0f) : base(startPosition, mass)
+    {
+        WanderAngle = 0;
+        WanderChange = 0.3f;
+    }
+    
+    // Wander behavior - random but smooth direction changes
+    public Vector2 Wander()
+    {
+        // Change the wander angle randomly
+        WanderAngle += (float)(new Random().NextDouble() - 0.5) * WanderChange;
+        
+        // Calculate the new desired direction
+        Vector2 desired = new Vector2(
+            (float)Math.Cos(WanderAngle),
+            (float)Math.Sin(WanderAngle)
+        ) * MaxSpeed;
+        
+        // Steering force
+        Vector2 steering = desired - Velocity;
+        
+        // Limit steering
+        if (steering.Length() > MaxForce)
+        {
+            steering = Vector2.Normalize(steering) * MaxForce;
+        }
+        
+        return steering;
+    }
+    
+    // Path following behavior
+    public Vector2 Follow(List<Vector2> path)
+    {
+        if (path.Count < 2) return Vector2.Zero;
+        
+        // Find the closest point on the path
+        Vector2 closestPoint = path[0];
+        float closestDistance = Vector2.Distance(Position, closestPoint);
+        int closestIndex = 0;
+        
+        for (int i = 1; i < path.Count; i++)
+        {
+            float distance = Vector2.Distance(Position, path[i]);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestIndex = i;
+                closestPoint = path[i];
+            }
+        }
+        
+        // Look ahead on the path
+        int targetIndex = Math.Min(closestIndex + 1, path.Count - 1);
+        Vector2 target = path[targetIndex];
+        
+        return Seek(target);
+    }
+    
+    // Separation behavior - avoid crowding other movers
+    public Vector2 Separate(List<SteeringMover> others, float separationRadius = 50)
+    {
+        Vector2 separation = Vector2.Zero;
+        int count = 0;
+        
+        foreach (SteeringMover other in others)
+        {
+            if (other == this) continue;
+            
+            float distance = Vector2.Distance(Position, other.Position);
+            if (distance > 0 && distance < separationRadius)
+            {
+                Vector2 away = Position - other.Position;
+                away = Vector2.Normalize(away) / distance; // Weight by distance
+                separation += away;
+                count++;
+            }
+        }
+        
+        if (count > 0)
+        {
+            separation /= count; // Average
+            separation = Vector2.Normalize(separation) * MaxSpeed;
+            separation -= Velocity; // Steering
+            
+            if (separation.Length() > MaxForce)
+            {
+                separation = Vector2.Normalize(separation) * MaxForce;
+            }
+        }
+        
+        return separation;
+    }
+}
+
+// Demo: Advanced steering behaviors
+List<SteeringMover> steeringMovers = new List<SteeringMover>();
+List<Vector2> path = new List<Vector2>();
+
+// Create a curved path
+for (int i = 0; i <= 20; i++)
+{
+    float t = i / 20.0f;
+    float x = 100 + t * 600;
+    float y = 300 + (float)Math.Sin(t * Math.PI * 2) * 100;
+    path.Add(new Vector2(x, y));
+}
+
+// Create movers with different behaviors
+for (int i = 0; i < 5; i++)
+{
+    SteeringMover mover = new SteeringMover(new Vector2(100 + i * 50, 200 + i * 20))
+    {
+        BaseColor = new Color((100 + i * 30), (150 - i * 20), (200 + i * 10), 255)
+    };
+    steeringMovers.Add(mover);
+}
+
+Raylib.InitWindow(800, 600, "Advanced Steering Behaviors");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Update movers with combined behaviors
+    foreach (SteeringMover mover in steeringMovers)
+    {
+        // Combine multiple steering forces
+        Vector2 pathForce = mover.Follow(path) * 1.0f;
+        Vector2 separationForce = mover.Separate(steeringMovers) * 2.0f;
+        Vector2 wanderForce = mover.Wander() * 0.5f;
+        
+        // Apply combined forces
+        mover.ApplyForce(pathForce + separationForce + wanderForce);
+        
+        mover.Update();
+        mover.WrapScreen(800, 600);
+    }
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw path
+    for (int i = 0; i < path.Count - 1; i++)
+    {
+        Raylib.DrawLineV(path[i], path[i + 1], Color.DarkGray);
+    }
+    
+    // Draw path points
+    foreach (Vector2 point in path)
+    {
+        Raylib.DrawCircleV(point, 3, Color.Gray);
+    }
+    
+    // Draw movers
+    foreach (SteeringMover mover in steeringMovers)
+    {
+        mover.Draw();
+    }
+    
+    // Instructions
+    Raylib.DrawText("Movers follow path while avoiding each other", 10, 10, 16, Color.White);
+    Raylib.DrawText("Path following + Separation + Wandering", 10, 30, 14, Color.LightGray);
+    Raylib.DrawText("Notice how they maintain spacing while following the path", 10, 50, 12, Color.Gray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🧠 Intelligent Behaviors:**
+- **Path Following**: Movers smoothly follow a predefined curved path
+- **Separation**: Movers maintain personal space to avoid crowding
+- **Wandering**: Small random movements prevent robotic behavior
+- **Force Combination**: Multiple behaviors blend naturally for complex motion
+
+This demonstrates how simple rules can create remarkably lifelike group behavior!
+
+---
+
+## 5. The Flow Field: Moving with Invisible Currents
+
+One of the most beautiful applications of vectors is the **flow field** - an invisible grid of forces that guides movement like wind or water currents:
+
+#!csharp
+
+// Flow field implementation
+public class FlowField
+{
+    private Vector2[,] field;
+    private int cols, rows;
+    private float cellSize;
+    private float time;
+    
+    public FlowField(int width, int height, float cellSize)
+    {
+        this.cellSize = cellSize;
+        cols = (int)(width / cellSize) + 1;
+        rows = (int)(height / cellSize) + 1;
+        field = new Vector2[cols, rows];
+        time = 0;
+        
+        UpdateField();
+    }
+    
+    public void UpdateField()
+    {
+        time += 0.02f;
+        
+        for (int x = 0; x < cols; x++)
+        {
+            for (int y = 0; y < rows; y++)
+            {
+                // Create smooth, flowing patterns using noise-like functions
+                float angle = (float)(Math.Sin(x * 0.1f + time) * Math.Cos(y * 0.1f + time * 0.5f) * Math.PI * 2);
+                
+                field[x, y] = new Vector2(
+                    (float)Math.Cos(angle),
+                    (float)Math.Sin(angle)
+                );
+            }
+        }
+    }
+    
+    public Vector2 GetForce(Vector2 position)
+    {
+        int col = (int)Math.Clamp(position.X / cellSize, 0, cols - 1);
+        int row = (int)Math.Clamp(position.Y / cellSize, 0, rows - 1);
+        
+        return field[col, row];
+    }
+    
+    public void Draw(bool showField = false)
+    {
+        if (!showField) return;
+        
+        for (int x = 0; x < cols; x++)
+        {
+            for (int y = 0; y < rows; y++)
+            {
+                Vector2 pos = new Vector2(x * cellSize, y * cellSize);
+                Vector2 force = field[x, y] * (cellSize * 0.3f);
+                
+                Raylib.DrawLineV(pos, pos + force, Raylib.ColorAlpha(Color.White, 0.3f));
+            }
+        }
+    }
+}
+
+// Flow field demonstration
+FlowField flowField = new FlowField(800, 600, 30);
+List<Mover> flowMovers = new List<Mover>();
+
+// Create movers that will follow the flow field
+for (int i = 0; i < 20; i++)
+{
+    Mover mover = new Mover(new Vector2(
+        Raylib.GetRandomValue(50, 750),
+        Raylib.GetRandomValue(50, 550)
+    ))
+    {
+        BaseColor = new Color(
+            Raylib.GetRandomValue(100, 255),
+            Raylib.GetRandomValue(100, 255),
+            Raylib.GetRandomValue(100, 255),
+            255
+        ),
+        MaxSpeed = 4.0f,
+        Life = float.MaxValue // Don't fade out
+    };
+    flowMovers.Add(mover);
+}
+
+bool showField = false;
+
+Raylib.InitWindow(800, 600, "Flow Field - Following Invisible Currents");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Toggle flow field visualization
+    if (Raylib.IsKeyPressed(KeyboardKey.Space))
+    {
+        showField = !showField;
+    }
+    
+    // Update flow field
+    flowField.UpdateField();
+    
+    // Update movers
+    foreach (Mover mover in flowMovers)
+    {
+        // Get flow force at mover's position
+        Vector2 flowForce = flowField.GetForce(mover.Position) * 0.3f;
+        mover.ApplyForce(flowForce);
+        
+        mover.Update();
+        mover.WrapScreen(800, 600);
+    }
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw flow field (optional)
+    flowField.Draw(showField);
+    
+    // Draw movers
+    foreach (Mover mover in flowMovers)
+    {
+        mover.Draw();
+    }
+    
+    // Instructions
+    Raylib.DrawText("Movers follow an invisible flow field", 10, 10, 16, Color.White);
+    Raylib.DrawText("Press SPACE to toggle flow field visualization", 10, 30, 14, Color.LightGray);
+    Raylib.DrawText("Notice the organic, fluid-like movement patterns", 10, 50, 12, Color.Gray);
+    
+    if (showField)
+    {
+        Raylib.DrawText("White lines show flow directions", 10, 70, 12, Color.Yellow);
+    }
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🌊 Flow Field Magic:**
+- **Invisible Forces**: A grid of vectors guides movement like wind or water currents
+- **Organic Motion**: Creates natural, fluid-like movement patterns
+- **Dynamic Fields**: The flow pattern changes over time for evolving behavior
+- **Visual Poetry**: Mathematical functions create beautiful, mesmerizing motion
+
+Press SPACE to see the invisible forces that guide the movers!
+
+---
+
+## 6. Challenge: Create Your Own Advanced Movers
+
+Your turn! These challenges will test your ability to create sophisticated movement systems:
+
+### Challenge 1: Ecosystem Simulation 🌿
+**Your Task**: Create a predator-prey ecosystem with intelligent movement.
+
+**Requirements:**
+- **Prey Animals**: Use steering to seek food and flee from predators
+- **Predator Animals**: Hunt prey using seeking behavior, die if they don't eat
+- **Food Sources**: Static objects that prey animals seek
+- **Energy System**: Eating food gives energy, movement costs energy
+
+**Advanced Behaviors:**
+- Prey animals should group together (flocking) for safety
+- Predators should separate to cover more hunting ground
+- Dying animals should leave energy that becomes new food
+- Population should self-regulate through predator-prey dynamics
+
+#!csharp
+
+using System.Numerics;
+using Raylib_cs;
+using System.Collections.Generic;
+
+// TODO: Create your ecosystem classes
+// Consider: PreyAnimal, PredatorAnimal, Food, EnergySystem
+
+// TODO: Implement energy-based survival:
+// - All animals start with energy and lose it over time
+// - Moving costs energy (based on speed)
+// - Eating food/prey restores energy
+// - Animals die when energy reaches zero
+
+// TODO: Implement intelligent behaviors:
+// - Prey: Seek food, flee from predators, flock for safety
+// - Predators: Hunt prey, separate for territory coverage
+// - Both: Avoid screen edges, maintain population balance
+
+// TODO: Visual feedback:
+// - Color animals based on energy level (bright = healthy, dim = hungry)
+// - Show population counts for each species
+// - Display trails to show movement patterns
+
+Console.WriteLine("Create your ecosystem simulation here!");
+Console.WriteLine("Start with 5 prey, 2 predators, and 10 food sources.");
+
+#!markdown
+
+**Success Criteria:**
+- Prey animals actively seek food while avoiding predators
+- Predators hunt efficiently and maintain population
+- Ecosystem reaches a dynamic balance (not extinction or overpopulation)
+- Natural-looking flocking and hunting behaviors emerge
+
+---
+
+### Challenge 2: Particle Physics System ⚛️
+**Your Task**: Create a particle system with realistic physics interactions.
+
+**Requirements:**
+- **Particles**: Objects with mass, charge, and magnetic properties
+- **Electromagnetic Forces**: Attraction/repulsion based on charge
+- **Gravity**: Universal attraction between all particles
+- **Collision Response**: Particles bounce and transfer energy
+- **Conservation Laws**: Energy and momentum are conserved
+
+**Physics to Implement:**
+- **Coulomb's Law**: `F = k * (q1 * q2) / r²` for electromagnetic force
+- **Gravitational Law**: `F = G * (m1 * m2) / r²` for gravity
+- **Elastic Collisions**: Calculate momentum transfer during collisions
+- **Energy Visualization**: Show kinetic and potential energy changes
+
+#!csharp
+
+// TODO: Create your particle physics system
+// Consider: ChargedParticle, ForceCalculator, CollisionHandler
+
+// TODO: Physics forces to implement:
+// - Electromagnetic: F = k * (q1 * q2) / distance²
+// - Gravitational: F = G * (m1 * m2) / distance²
+// - Damping: Gradual energy loss to prevent infinite acceleration
+
+// TODO: Collision system:
+// - Detect when particles overlap
+// - Calculate collision response (elastic)
+// - Transfer momentum between particles
+// - Show collision effects visually
+
+// TODO: Advanced features:
+// - Particle trails showing trajectories
+// - Energy meter showing total system energy
+// - Ability to add/remove particles during runtime
+// - Different particle types (electron, proton, neutron)
+
+Console.WriteLine("Build your particle physics system here!");
+Console.WriteLine("Experiment with different charges and masses.");
+
+#!markdown
+
+---
+
+### Challenge 3: Intelligent Swarm System 🐝
+**Your Task**: Create a swarm intelligence system with emergent collective behavior.
+
+**Requirements:**
+- **Swarm Agents**: Individual entities following simple rules
+- **Collective Goals**: The swarm works together to achieve objectives
+- **Obstacle Avoidance**: Agents navigate around barriers intelligently
+- **Dynamic Leadership**: Leadership emerges based on position and conditions
+- **Resource Collection**: Agents find and collect scattered resources
+
+**Swarm Behaviors:**
+- **Cohesion**: Stay close to nearby swarm members
+- **Alignment**: Match direction with nearby swarm members
+- **Separation**: Avoid crowding other agents
+- **Goal Seeking**: Move toward current swarm objective
+- **Obstacle Avoidance**: Navigate around barriers
+
+#!csharp
+
+// TODO: Create your swarm intelligence system
+// Consider: SwarmAgent, SwarmManager, Obstacle, Resource
+
+// TODO: Implement Craig Reynolds' flocking rules:
+// - Separation: steer to avoid crowding local agents
+// - Alignment: steer towards average heading of neighbors
+// - Cohesion: steer to move toward average position of neighbors
+
+// TODO: Add higher-level swarm intelligence:
+// - Resource detection and collection
+// - Dynamic goal setting based on environment
+// - Emergent leadership (agents at front guide others)
+// - Communication between agents (pheromone trails?)
+
+// TODO: Environmental challenges:
+// - Obstacles that must be navigated around
+// - Resources scattered across the environment
+// - Changing goals that require swarm adaptation
+// - Performance metrics (efficiency, coordination)
+
+Console.WriteLine("Create your swarm intelligence system here!");
+Console.WriteLine("Watch emergent behaviors arise from simple rules.");
+
+#!markdown
+
+**Success Criteria:**
+- Individual agents follow simple rules but create complex group behavior
+- Swarm efficiently navigates around obstacles
+- Resources are collected through coordinated effort
+- Leadership and organization emerge naturally from the group
+
+---
+
+## 7. Challenge Reflection
+
+After implementing your advanced mover systems, consider:
+
+1. **Emergence**: What complex behaviors emerged from your simple rules?
+
+2. **Performance**: How did you optimize calculations when dealing with many objects?
+
+3. **Visual Appeal**: How did mathematical concepts translate into beautiful motion?
+
+4. **Real-world Applications**: Where might these movement patterns be useful in actual games?
+
+5. **Debugging**: How did you visualize and debug complex movement behaviors?
+
+---
+
+## 8. Looking Ahead: Forces and Interactions
+
+You've now mastered sophisticated movement and steering behaviors! In our next sessions, we'll build on this foundation:
+
+- **Session 21**: Advanced force systems (springs, magnetic fields, orbital mechanics)
+- **Session 22**: Collision detection and response systems
+- **Session 23**: Realistic bouncing and energy transfer
+- **Session 24**: Complete physics-based game bringing it all together
+
+**Your Movement Toolkit** now includes:
+- ✅ **Professional Mover Class**: Sophisticated objects with trails, colors, and effects
+- ✅ **Steering Behaviors**: Seek, flee, wander, path following, separation
+- ✅ **Advanced AI**: Flocking, swarm intelligence, emergent behavior
+- ✅ **Flow Fields**: Invisible force grids creating organic motion
+- ✅ **Visual Excellence**: Trails, glows, dynamic colors, and debug visualization
+- ✅ **Performance Optimization**: Efficient calculations for many moving objects
+
+---
+
+## Key Concepts Mastered:
+- **Professional Mover Architecture**: Sophisticated objects with advanced features
+- **Steering Behaviors**: Intelligent movement toward goals with realistic physics
+- **Emergent Behavior**: Complex group dynamics from simple individual rules
+- **Flow Fields**: Invisible force grids guiding natural-looking movement
+- **Visual Enhancement**: Trails, colors, and effects that bring motion to life
+- **Performance Considerations**: Efficient calculations for real-time systems
+- **Integration Skills**: Combining vectors with Raylib for beautiful results
+
+**Exceptional work mastering sophisticated movement! You've transformed mathematical concepts into visual poetry. The Mover objects you can now create rival those found in professional game engines and are ready for advanced physics interactions!** 🎨🚀✨

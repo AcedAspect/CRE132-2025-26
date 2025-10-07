@@ -1,0 +1,284 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Conditional Logic with if/else
+
+## 1. Making Decisions in Code
+
+Games are not static. They react to player actions and changing conditions. A player might press a key, a timer might run out, or a character's health might drop to zero. To handle these situations, we need our code to make decisions.
+
+The primary tool for this is the **`if` statement**. An `if` statement checks if a certain condition is `true`. If it is, a specific block of code is executed.
+
+---
+
+## 2. The `if` Statement
+
+The structure of an `if` statement looks like this:
+
+```csharp
+if (condition)
+{
+    // Code to execute if the condition is true
+}
+```
+
+The `condition` part must be an expression that results in a boolean value (`true` or `false`). This is where **comparison operators** become very important.
+
+### Comparison Operators
+-   `==` : **Is equal to** (e.g., `score == 100`)
+-   `!=` : **Is not equal to** (e.g., `playerName != "Guest"`)
+-   `>`  : **Is greater than** (e.g., `health > 50`)
+-   `<`  : **Is less than** (e.g., `ammo < 10`)
+-   `>=` : **Is greater than or equal to**
+-   `<=` : **Is less than or equal to**
+
+Let's see a simple example.
+
+#!csharp
+
+int playerScore = 100;
+
+if (playerScore >= 100)
+{
+    Console.WriteLine("You are a high-score champion!");
+}
+
+#!markdown
+
+## 3. Handling the "Otherwise" with `else`
+
+What if the condition is `false`? Often, you want to do something else. The **`else` statement** lets you do this. It runs a block of code only when the `if` condition is not met.
+
+```csharp
+if (condition)
+{
+    // Runs if condition is true
+}
+else
+{
+    // Runs if condition is false
+}
+```
+
+#!csharp
+
+int playerHealth = 45;
+
+if (playerHealth > 50)
+{
+    Console.WriteLine("You are healthy.");
+}
+else
+{
+    Console.WriteLine("Your health is low. Find a health pack!");
+}
+
+#!markdown
+
+## 4. Chaining Conditions with `else if`
+
+Sometimes you have more than two possibilities. You can chain multiple conditions together using **`else if`**.
+
+#!csharp
+
+string weather = "Rainy";
+
+if (weather == "Sunny")
+{
+    Console.WriteLine("It's a beautiful day!");
+}
+else if (weather == "Rainy")
+{
+    Console.WriteLine("Don't forget your umbrella!");
+}
+else if (weather == "Cloudy")
+{
+    Console.WriteLine("It might be a bit gloomy.");
+}
+else
+{
+    Console.WriteLine("Weather condition unknown.");
+}
+
+#!markdown
+
+## 5. Code Challenge: Simple Password Checker
+
+**Your Challenge:** Write a program that acts like a simple password checker.
+
+1.  Create a `string` variable to hold a secret password.
+2.  Ask the user to enter the password using `Console.ReadLine()`.
+3.  Use an `if`/`else` statement to check if the password the user entered **is equal to** the secret password.
+4.  Print a success message if they are correct, and a failure message if they are wrong.
+
+#!csharp
+
+// Your password checker code goes here!
+
+#!markdown
+
+Conditional logic with `if`, `else if`, and `else` is a core pillar of programming. It gives our programs the ability to react and adapt. 
+
+#!markdown
+
+## 6. Variables, Keywords and Code Syntax
+
+### Typical Data Types
+A variable is so names because the values in it can be changed (they are mutable). 
+
+Variables in C# must be declared with a type. The basic data types include `int`, `double`, `char`, `bool`, and `string`. For example:
+
+   ```csharp
+   int age = 25;
+   float price = 19.95f;
+   char grade = 'A';
+   bool isCSharpFun = true;
+   string name = "John";
+   ```
+
+Note that there are also code keywords for defining information that cannot be changed (immutable values):
+- `const`: Value must be set at declaration and cannot change.
+- `readonly`: Value can be set at declaration during runtime (when the program is running).
+
+**Exercise**: Change the data in the variables at the top of the program below with some invented student information, then run the code cell:
+
+#!csharp
+
+using System;
+
+string name = "..?..";          // text data type
+int age = 0;                    // integer data type
+float averageMark = 19.95f;     // floating-point data type
+char averageGrade = 'A';        // single character data type
+bool coursePassed = false;       // boolean (logical) data type
+
+// ! add pass or fail logic here to set the coursePassed variable !
+
+// some code to determine if the course was passed or failed
+string result = "";
+if (coursePassed == true) { result = "Passed"; }
+else { result = "Failed"; }
+
+// building the message to be displayed
+string message = name   + " is " + age + " years old. He has an average mark of " 
+                        + (int)averageMark + " which gives him a grade = " + averageGrade 
+                        + " This means he has " + result + " the course."; 
+// displaying the message
+Console.WriteLine(message);
+
+#!markdown
+
+A few things to note about the code above.
+
+- You can build strings in C# by adding the contents of variable to a `string` variable. Using the `+` operator in this way is an example of *operator overloading*, showing that an operator may be used in several different ways, depending on the content. You might expect the `+` only to add numbers together, but overloading it to add text together is very useful.
+- We have used `if` `else` conditions to check if the student has passed their course. To acheive this we have also used an equivalence operator,  `==` . This operator checks if two entities contain equal values. If they do then a boolean value of `true` is the result, otherwise a `false` is the outcome. 
+- Note that normal round `( )` brackets are needed for the if condition logic.
+- Note the use of curly brackets to separate the code for pass and fail outcomes. Also, the use of a `;` after the line of code in these brackets. **Most beginner coding errors are due to a missing semi-colon or curly bracket**.
+
+**Challenge**: The code above would be better if the `coursePassed` variable would be set based on whether the `averageMark` is equal to or greater than 40%. Try to add this code in the location marked by the exclamation marks `!`. 
+
+- The logic for this goes something like ~ if averageMark >= 40; coursePassed = true; else coursePassed = false;
+- This is close to the correct code logic but the correct syntax needs to be used. 
+
+#!markdown
+
+## 7. Text Game with Logic
+
+### Applying Logic to a Game
+
+Now that we understand `if`/`else` statements, let's use them to create a proper game. We're going to build a classic **"Guess the Number"** game.
+
+The computer will think of a secret number, and the player will have to guess it. The program will give the player feedback (`"Higher"` or `"Lower"`) until they guess correctly.
+
+---
+
+### The Problem of Data Types
+
+We have a small challenge to overcome first. Remember `Console.ReadLine()`? It always gives us a `string`. But the number we want to guess is an `int`. We can't compare a string and an integer directly!
+
+```csharp
+string guessText = "50";
+int secretNumber = 50;
+
+// This will cause an error!
+// if (guessText == secretNumber) { ... }
+```
+
+We need a way to **convert** the user's string input into an integer. This is called **parsing**.
+
+### `int.Parse()`
+
+The `int.Parse()` command takes a string and tries to turn it into an integer. 
+
+#!csharp
+
+string someNumberAsString = "123";
+int aRealInt = int.Parse(someNumberAsString);
+
+Console.WriteLine(aRealInt * 2); // This now works!
+
+#!markdown
+
+**Important:** If the string contains anything that isn't a number (like `"hello"` or `"50a"`), `int.Parse()` will crash your program! For now, we will assume the user always enters a valid number.
+
+---
+
+## Building the Game
+
+Here is the code for a "Guess the Number" game. Let's analyze the logic:
+
+1.  A secret number is chosen.
+2.  The player is asked to enter their guess.
+3.  The input string is converted to an `int`.
+4.  An `if`/`else if`/`else` chain checks the guess against the secret number:
+    -   If the guess is too high, it prints "Lower."
+    -   If the guess is too low, it prints "Higher."
+    -   If it's neither of those, it must be correct, so it prints a success message.
+
+#!csharp
+
+// The computer picks a secret number
+int secretNumber = 7;
+
+Console.WriteLine("I'm thinking of a number between 1 and 10.");
+Console.WriteLine("Can you guess what it is?");
+
+// Get the user's guess as a string
+string guessText = Console.ReadLine();
+
+// Convert the string to an integer
+int playerGuess = int.Parse(guessText);
+
+// Check the guess
+if (playerGuess > secretNumber)
+{
+    Console.WriteLine("Too high! The number was " + secretNumber);
+}
+else if (playerGuess < secretNumber)
+{
+    Console.WriteLine("Too low! The number was " + secretNumber);
+}
+else
+{
+    Console.WriteLine("You got it! You are a master guesser!");
+}
+
+#!markdown
+
+## Code Challenge: Add More Feedback
+
+**Your Challenge:** Improve the guessing game by giving the player more specific feedback.
+
+Right now, the game only tells the player if their guess was right or wrong. Modify the code to also handle the following situations:
+
+1.  Add a check to see if the player's guess is **way off**. For example, if the guess is more than 5 away from the secret number, tell them they are "ice cold."
+2.  Add a check to see if the player's guess is **very close**. For example, if the guess is only 1 away from the secret number, tell them they are "red hot!"
+
+*Hint: You will need to use the subtraction operator (`-`) and might need more `else if` statements.* You can get the absolute difference between two numbers like this: `Math.Abs(number1 - number2)`.
+
+#!csharp
+
+// Your improved guessing game code goes here!

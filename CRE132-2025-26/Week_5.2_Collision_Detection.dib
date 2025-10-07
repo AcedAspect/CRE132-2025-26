@@ -1,0 +1,852 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Collision Detection
+
+## 1. Recap: Moving Objects Need Boundaries
+
+In the previous sessions, we've created objects that move using vectors and forces. They can accelerate, seek targets, and respond to gravity. But there's one crucial problem: **they don't know when they've hit something!**
+
+In real games, objects need to:
+- 🚗 Cars crash into walls and other cars
+- ⚽ Balls bounce off paddles and goals
+- 🏃 Players can't walk through solid objects
+- 💥 Bullets hit targets and explode
+- 💎 Characters collect coins and power-ups
+
+The solution: **Collision Detection** - algorithms that determine when two objects occupy the same space.
+
+---
+
+## 2. What is Collision Detection?
+
+**Collision Detection** is the process of determining whether two or more objects in a game are touching or overlapping. It's one of the most fundamental systems in game programming.
+
+### Types of Collision Detection:
+- **Point vs Point**: Are two exact positions the same?
+- **Point vs Shape**: Is a point inside a rectangle, circle, or other shape?
+- **Shape vs Shape**: Are two shapes overlapping?
+
+### Common Shape Types:
+- **Rectangles (AABB)**: Axis-Aligned Bounding Boxes - fast and simple
+- **Circles**: Perfect for round objects, very efficient
+- **Complex Polygons**: More accurate but computationally expensive
+
+Today we'll focus on the most practical collision types for games: **point-in-rectangle**, **rectangle-rectangle**, and **circle-circle**.
+
+---
+
+## 3. Point-in-Rectangle Collision
+
+The simplest collision test: "Is this point inside this rectangle?"
+
+### The Algorithm:
+A point (px, py) is inside a rectangle if:
+- `px >= rectangle.left` AND `px <= rectangle.right`
+- `py >= rectangle.top` AND `py <= rectangle.bottom`
+
+#!csharp
+
+using System.Numerics;
+
+public class GameRectangle
+{
+    public float X, Y;          // Top-left corner
+    public float Width, Height; // Dimensions
+    
+    public GameRectangle(float x, float y, float width, float height)
+    {
+        X = x;
+        Y = y;
+        Width = width;
+        Height = height;
+    }
+    
+    // Boundary properties for easy collision checking
+    public float Left => X;
+    public float Right => X + Width;
+    public float Top => Y;
+    public float Bottom => Y + Height;
+    
+    public bool ContainsPoint(Vector2 point)
+    {
+        return point.X >= Left && point.X <= Right &&
+               point.Y >= Top && point.Y <= Bottom;
+    }
+    
+    public bool ContainsPoint(float px, float py)
+    {
+        return px >= Left && px <= Right &&
+               py >= Top && py <= Bottom;
+    }
+    
+    public void DisplayInfo()
+    {
+        Console.WriteLine($"Rectangle: ({X}, {Y}) size {Width}×{Height}");
+        Console.WriteLine($"Boundaries: Left={Left}, Right={Right}, Top={Top}, Bottom={Bottom}");
+    }
+}
+
+// Test point-in-rectangle collision
+Console.WriteLine("=== Point-in-Rectangle Collision Tests ===");
+
+GameRectangle testRect = new GameRectangle(100, 50, 200, 150);
+testRect.DisplayInfo();
+
+// Test various points
+Vector2[] testPoints = {
+    new Vector2(150, 100),  // Inside
+    new Vector2(200, 125),  // Inside
+    new Vector2(50, 100),   // Outside (left)
+    new Vector2(350, 100),  // Outside (right)
+    new Vector2(150, 25),   // Outside (above)
+    new Vector2(150, 250)   // Outside (below)
+};
+
+foreach (Vector2 point in testPoints)
+{
+    bool isInside = testRect.ContainsPoint(point);
+    string result = isInside ? "INSIDE" : "OUTSIDE";
+    Console.WriteLine($"Point ({point.X}, {point.Y}) is {result} the rectangle");
+}
+
+#!markdown
+
+**Use Cases**: Mouse clicks on buttons, cursor hovering over UI elements, checking if a projectile hits a rectangular target.
+
+---
+
+## 4. Rectangle-to-Rectangle Collision (AABB)
+
+**AABB** stands for "Axis-Aligned Bounding Box" - rectangles whose sides are parallel to the X and Y axes. This is the most common collision detection in 2D games because it's fast and works well for most objects.
+
+### The Algorithm:
+Two rectangles overlap if **all four conditions** are true:
+- Rectangle A's left edge is to the left of Rectangle B's right edge
+- Rectangle A's right edge is to the right of Rectangle B's left edge  
+- Rectangle A's top edge is above Rectangle B's bottom edge
+- Rectangle A's bottom edge is below Rectangle B's top edge
+
+If **any condition fails**, the rectangles don't overlap.
+
+#!csharp
+
+public static class CollisionDetection
+{
+    public static bool RectangleOverlap(GameRectangle rectA, GameRectangle rectB)
+    {
+        // Check if rectangles are separated on any axis
+        if (rectA.Right < rectB.Left ||   // A is completely to the left of B
+            rectA.Left > rectB.Right ||   // A is completely to the right of B
+            rectA.Bottom < rectB.Top ||   // A is completely above B
+            rectA.Top > rectB.Bottom)     // A is completely below B
+        {
+            return false; // No overlap
+        }
+        
+        return true; // They must be overlapping
+    }
+    
+    public static bool RectangleOverlapDetailed(GameRectangle rectA, GameRectangle rectB, out string reason)
+    {
+        // Detailed version that explains why collision failed
+        if (rectA.Right < rectB.Left)
+        {
+            reason = "A is completely to the left of B";
+            return false;
+        }
+        if (rectA.Left > rectB.Right)
+        {
+            reason = "A is completely to the right of B";
+            return false;
+        }
+        if (rectA.Bottom < rectB.Top)
+        {
+            reason = "A is completely above B";
+            return false;
+        }
+        if (rectA.Top > rectB.Bottom)
+        {
+            reason = "A is completely below B";
+            return false;
+        }
+        
+        reason = "Rectangles are overlapping!";
+        return true;
+    }
+}
+
+// Test rectangle-to-rectangle collision
+Console.WriteLine("\n=== Rectangle-to-Rectangle Collision Tests ===");
+
+GameRectangle playerRect = new GameRectangle(100, 100, 50, 50);
+Console.WriteLine("Player rectangle:");
+playerRect.DisplayInfo();
+
+// Test against various other rectangles
+GameRectangle[] testRectangles = {
+    new GameRectangle(125, 125, 50, 50),  // Overlapping
+    new GameRectangle(75, 75, 50, 50),    // Overlapping (corner)
+    new GameRectangle(200, 100, 50, 50),  // Separate (right)
+    new GameRectangle(25, 100, 50, 50),   // Separate (left)
+    new GameRectangle(100, 200, 50, 50),  // Separate (below)
+    new GameRectangle(100, 25, 50, 50)    // Separate (above)
+};
+
+for (int i = 0; i < testRectangles.Length; i++)
+{
+    GameRectangle testRect = testRectangles[i];
+    bool colliding = CollisionDetection.RectangleOverlapDetailed(playerRect, testRect, out string reason);
+    
+    Console.WriteLine($"\nTest {i + 1}: Rectangle at ({testRect.X}, {testRect.Y})");
+    Console.WriteLine($"Result: {(colliding ? "COLLISION" : "NO COLLISION")}");
+    Console.WriteLine($"Reason: {reason}");
+}
+
+#!markdown
+
+**Performance Note**: AABB collision detection is extremely fast because it only requires simple number comparisons - no expensive operations like square roots or trigonometry!
+
+---
+
+## 5. Circle-to-Circle Collision
+
+Circles are perfect for round objects like balls, planets, or explosions. Circle collision is based on **distance calculation**.
+
+### The Algorithm:
+Two circles collide if the distance between their centres is **less than or equal to** the sum of their radii.
+
+```
+distance_between_centres <= radius1 + radius2
+```
+
+#!csharp
+
+public class GameCircle
+{
+    public Vector2 Position; // Centre of the circle
+    public float Radius;
+    
+    public GameCircle(float x, float y, float radius)
+    {
+        Position = new Vector2(x, y);
+        Radius = radius;
+    }
+    
+    public void DisplayInfo()
+    {
+        Console.WriteLine($"Circle: centre ({Position.X}, {Position.Y}), radius {Radius}");
+    }
+}
+
+public static class CircleCollision
+{
+    public static bool CirclesOverlap(GameCircle circleA, GameCircle circleB)
+    {
+        // Calculate distance between centres
+        float distance = Vector2.Distance(circleA.Position, circleB.Position);
+        
+        // Check if distance is less than sum of radii
+        float radiusSum = circleA.Radius + circleB.Radius;
+        
+        return distance <= radiusSum;
+    }
+    
+    public static bool CirclesOverlapDetailed(GameCircle circleA, GameCircle circleB, out float distance, out float radiusSum)
+    {
+        distance = Vector2.Distance(circleA.Position, circleB.Position);
+        radiusSum = circleA.Radius + circleB.Radius;
+        
+        return distance <= radiusSum;
+    }
+}
+
+// Test circle-to-circle collision
+Console.WriteLine("\n=== Circle-to-Circle Collision Tests ===");
+
+GameCircle playerBall = new GameCircle(100, 100, 25);
+Console.WriteLine("Player ball:");
+playerBall.DisplayInfo();
+
+// Test against various other circles
+GameCircle[] testCircles = {
+    new GameCircle(120, 110, 20),   // Overlapping
+    new GameCircle(75, 85, 15),     // Overlapping
+    new GameCircle(200, 100, 30),   // Just touching
+    new GameCircle(250, 100, 20),   // Separate
+    new GameCircle(100, 200, 10),   // Separate (below)
+    new GameCircle(50, 50, 5)       // Separate (small circle)
+};
+
+for (int i = 0; i < testCircles.Length; i++)
+{
+    GameCircle testCircle = testCircles[i];
+    bool colliding = CircleCollision.CirclesOverlapDetailed(playerBall, testCircle, out float distance, out float radiusSum);
+    
+    Console.WriteLine($"\nTest {i + 1}:");
+    testCircle.DisplayInfo();
+    Console.WriteLine($"Distance between centres: {distance:F2}");
+    Console.WriteLine($"Sum of radii: {radiusSum:F2}");
+    Console.WriteLine($"Result: {(colliding ? "COLLISION" : "NO COLLISION")}");
+}
+
+#!markdown
+
+**Efficiency**: Circle collision only requires one distance calculation and one comparison - very fast for real-time games!
+
+---
+
+## 6. Mixed Collision Types: Circle vs Rectangle
+
+Sometimes you need to check collision between different shape types. Circle-vs-rectangle is common for things like a ball hitting a paddle.
+
+#!csharp
+
+public static class MixedCollision
+{
+    public static bool CircleRectangleOverlap(GameCircle circle, GameRectangle rectangle)
+    {
+        // Find the closest point on the rectangle to the circle's centre
+        float closestX = Math.Max(rectangle.Left, Math.Min(circle.Position.X, rectangle.Right));
+        float closestY = Math.Max(rectangle.Top, Math.Min(circle.Position.Y, rectangle.Bottom));
+        
+        // Calculate distance from circle centre to this closest point
+        Vector2 closestPoint = new Vector2(closestX, closestY);
+        float distance = Vector2.Distance(circle.Position, closestPoint);
+        
+        // Collision if distance is less than circle's radius
+        return distance <= circle.Radius;
+    }
+    
+    public static bool CircleRectangleOverlapDetailed(GameCircle circle, GameRectangle rectangle, out Vector2 closestPoint, out float distance)
+    {
+        // Find the closest point on the rectangle to the circle's centre
+        float closestX = Math.Max(rectangle.Left, Math.Min(circle.Position.X, rectangle.Right));
+        float closestY = Math.Max(rectangle.Top, Math.Min(circle.Position.Y, rectangle.Bottom));
+        
+        closestPoint = new Vector2(closestX, closestY);
+        distance = Vector2.Distance(circle.Position, closestPoint);
+        
+        return distance <= circle.Radius;
+    }
+}
+
+// Test circle vs rectangle collision
+Console.WriteLine("\n=== Circle vs Rectangle Collision Tests ===");
+
+GameCircle testBall = new GameCircle(150, 100, 30);
+GameRectangle testPaddle = new GameRectangle(200, 80, 20, 40);
+
+Console.WriteLine("Test ball:");
+testBall.DisplayInfo();
+Console.WriteLine("Test paddle:");
+testPaddle.DisplayInfo();
+
+bool collision = MixedCollision.CircleRectangleOverlapDetailed(testBall, testPaddle, out Vector2 closestPoint, out float distance);
+
+Console.WriteLine($"\nClosest point on rectangle: ({closestPoint.X}, {closestPoint.Y})");
+Console.WriteLine($"Distance from circle centre to closest point: {distance:F2}");
+Console.WriteLine($"Circle radius: {testBall.Radius}");
+Console.WriteLine($"Result: {(collision ? "COLLISION" : "NO COLLISION")}");
+
+// Test multiple positions
+Vector2[] ballPositions = {
+    new Vector2(170, 100),  // Close to paddle
+    new Vector2(190, 100),  // Very close
+    new Vector2(210, 100),  // Inside paddle
+    new Vector2(250, 100),  // Far from paddle
+    new Vector2(200, 60),   // Above paddle
+    new Vector2(200, 140)   // Below paddle
+};
+
+Console.WriteLine("\nTesting ball at different positions:");
+foreach (Vector2 pos in ballPositions)
+{
+    testBall.Position = pos;
+    bool hit = MixedCollision.CircleRectangleOverlap(testBall, testPaddle);
+    Console.WriteLine($"Ball at ({pos.X}, {pos.Y}): {(hit ? "HIT" : "MISS")}");
+}
+
+#!markdown
+
+**Real-World Usage**: Perfect for ball-and-paddle games like Pong, Breakout, or Pinball!
+
+---
+
+## 7. Raylib Visual Collision Demo
+
+Let's see collision detection in action with an interactive visual demonstration:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Visual collision objects
+public class VisualRectangle
+{
+    public GameRectangle Bounds;
+    public Color NormalColor;
+    public Color CollisionColor;
+    public bool IsColliding;
+    
+    public VisualRectangle(float x, float y, float width, float height, Color color)
+    {
+        Bounds = new GameRectangle(x, y, width, height);
+        NormalColor = color;
+        CollisionColor = Color.Red;
+        IsColliding = false;
+    }
+    
+    public void Draw()
+    {
+        Color drawColor = IsColliding ? CollisionColor : NormalColor;
+        Raylib.DrawRectangle((int)Bounds.X, (int)Bounds.Y, (int)Bounds.Width, (int)Bounds.Height, drawColor);
+        Raylib.DrawRectangleLines((int)Bounds.X, (int)Bounds.Y, (int)Bounds.Width, (int)Bounds.Height, Color.White);
+    }
+}
+
+public class VisualCircle
+{
+    public GameCircle Circle;
+    public Color NormalColor;
+    public Color CollisionColor;
+    public bool IsColliding;
+    
+    public VisualCircle(float x, float y, float radius, Color color)
+    {
+        Circle = new GameCircle(x, y, radius);
+        NormalColor = color;
+        CollisionColor = Color.Red;
+        IsColliding = false;
+    }
+    
+    public void MoveTo(Vector2 position)
+    {
+        Circle.Position = position;
+    }
+    
+    public void Draw()
+    {
+        Color drawColor = IsColliding ? CollisionColor : NormalColor;
+        Raylib.DrawCircleV(Circle.Position, Circle.Radius, drawColor);
+        Raylib.DrawCircleLinesV(Circle.Position, Circle.Radius, Color.White);
+    }
+}
+
+// Create test objects
+VisualRectangle[] rectangles = {
+    new VisualRectangle(100, 100, 80, 60, Color.Blue),
+    new VisualRectangle(300, 200, 100, 40, Color.Green),
+    new VisualRectangle(500, 150, 60, 80, Color.Purple),
+    new VisualRectangle(200, 350, 120, 50, Color.Orange)
+};
+
+VisualCircle[] circles = {
+    new VisualCircle(400, 100, 25, Color.Yellow),
+    new VisualCircle(150, 300, 30, Color.Pink),
+    new VisualCircle(600, 300, 20, Color.Blue)
+};
+
+// Mouse-controlled circle
+VisualCircle mouseCircle = new VisualCircle(0, 0, 35, Color.White);
+
+Raylib.InitWindow(800, 600, "Week 4, Session 22: Collision Detection Demo");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Update mouse circle position
+    mouseCircle.MoveTo(Raylib.GetMousePosition());
+    
+    // Reset all collision states
+    foreach (var rect in rectangles) rect.IsColliding = false;
+    foreach (var circle in circles) circle.IsColliding = false;
+    mouseCircle.IsColliding = false;
+    
+    // Check mouse circle vs rectangles
+    foreach (var rect in rectangles)
+    {
+        if (MixedCollision.CircleRectangleOverlap(mouseCircle.Circle, rect.Bounds))
+        {
+            rect.IsColliding = true;
+            mouseCircle.IsColliding = true;
+        }
+    }
+    
+    // Check mouse circle vs other circles
+    foreach (var circle in circles)
+    {
+        if (CircleCollision.CirclesOverlap(mouseCircle.Circle, circle.Circle))
+        {
+            circle.IsColliding = true;
+            mouseCircle.IsColliding = true;
+        }
+    }
+    
+    // Check rectangle vs rectangle collisions
+    for (int i = 0; i < rectangles.Length; i++)
+    {
+        for (int j = i + 1; j < rectangles.Length; j++)
+        {
+            if (CollisionDetection.RectangleOverlap(rectangles[i].Bounds, rectangles[j].Bounds))
+            {
+                rectangles[i].IsColliding = true;
+                rectangles[j].IsColliding = true;
+            }
+        }
+    }
+    
+    // Check circle vs circle collisions
+    for (int i = 0; i < circles.Length; i++)
+    {
+        for (int j = i + 1; j < circles.Length; j++)
+        {
+            if (CircleCollision.CirclesOverlap(circles[i].Circle, circles[j].Circle))
+            {
+                circles[i].IsColliding = true;
+                circles[j].IsColliding = true;
+            }
+        }
+    }
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw all objects
+    foreach (var rect in rectangles) rect.Draw();
+    foreach (var circle in circles) circle.Draw();
+    mouseCircle.Draw();
+    
+    // Instructions
+    Raylib.DrawText("Collision Detection Demo", 10, 10, 24, Color.White);
+    Raylib.DrawText("Move mouse to test collisions", 10, 40, 16, Color.LightGray);
+    Raylib.DrawText("Objects turn RED when colliding", 10, 60, 16, Color.LightGray);
+    
+    // Collision info
+    Vector2 mousePos = Raylib.GetMousePosition();
+    Raylib.DrawText($"Mouse: ({mousePos.X:F0}, {mousePos.Y:F0})", 10, 100, 16, Color.White);
+    
+    if (mouseCircle.IsColliding)
+    {
+        Raylib.DrawText("COLLISION DETECTED!", 10, 120, 20, Color.Red);
+    }
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Interactive Features:**
+- 🖱️ **Mouse circle** follows your cursor and detects collisions
+- 🟦 **Rectangle shapes** detect overlaps with mouse and each other
+- 🟡 **Circle shapes** detect overlaps with mouse and each other
+- 🔴 **Visual feedback** - objects turn red when colliding
+- 📊 **Real-time info** showing mouse position and collision status
+
+This demonstrates all the collision detection algorithms working together in real-time!
+
+---
+
+## 8. Challenge: Build Your Own Collision Systems
+
+Now it's your turn to implement collision detection from scratch:
+
+### Challenge 1: Collision Grid System 🎯
+**Your Task**: Create a collision detection system for multiple moving objects.
+
+**Requirements:**
+- Create a `MovingObject` class with position, size, and velocity
+- Implement efficient collision checking between all objects
+- Objects should change colour when colliding
+- Show collision count and collision pairs
+
+#!csharp
+
+using System.Collections.Generic;
+using System.Numerics;
+
+// TODO: Create your MovingObject class here
+public class MovingObject
+{
+    // Position, Size, Velocity, Color properties
+    // Update() method to move the object
+    // CheckCollision() method to test against another object
+}
+
+// TODO: Create your CollisionManager class here
+public class CollisionManager
+{
+    // List of objects to track
+    // CheckAllCollisions() method
+    // GetCollisionCount() method
+    // GetCollisionPairs() method
+}
+
+// TODO: Create your collision detection system here
+
+Console.WriteLine("=== Collision Grid System ===");
+
+// Create several moving objects with different sizes and velocities
+// Each frame: update positions, check all collisions, report results
+// Test framework (uncomment when your classes are ready):
+
+/*
+List<MovingObject> objects = new List<MovingObject>
+{
+    new MovingObject(100, 100, 40, 40, new Vector2(2, 1)),
+    new MovingObject(200, 150, 30, 30, new Vector2(-1, 2)),
+    new MovingObject(300, 200, 50, 25, new Vector2(1, -1)),
+    new MovingObject(150, 250, 35, 35, new Vector2(-2, 0))
+};
+
+CollisionManager manager = new CollisionManager(objects);
+
+for (int frame = 1; frame <= 10; frame++)
+{
+    Console.WriteLine($"\n--- Frame {frame} ---");
+    
+    // Update all object positions
+    foreach (var obj in objects)
+    {
+        obj.Update();
+    }
+    
+    // Check for collisions
+    manager.CheckAllCollisions();
+    
+    // Report results
+    Console.WriteLine($"Total collisions this frame: {manager.GetCollisionCount()}");
+    var pairs = manager.GetCollisionPairs();
+    foreach (var pair in pairs)
+    {
+        Console.WriteLine($"Collision between objects at {pair.Item1} and {pair.Item2}");
+    }
+}
+*/
+
+#!markdown
+
+---
+
+### Challenge 2: Boundary Collision System 🏀
+**Your Task**: Create a system where objects bounce off screen boundaries.
+
+**Requirements:**
+- Objects should detect collision with screen edges (left, right, top, bottom)
+- When hitting an edge, reverse the appropriate velocity component
+- Add "damping" so objects gradually slow down with each bounce
+- Track total bounces and display bounce statistics
+
+#!csharp
+
+using System.Numerics;
+
+// TODO: Create your BoundaryCollider class here
+public class BoundaryCollider
+{
+    // ScreenWidth, ScreenHeight properties
+    // CheckBoundaryCollision(object) method
+    // HandleBounce(object, collision_side) method
+}
+
+// TODO: Create your BouncingBall class here
+public class BouncingBall
+{
+    // Position, Velocity, Radius properties
+    // BounceCount property
+    // Update() method
+    // ApplyDamping() method (reduce velocity by small amount each bounce)
+}
+
+// TODO: Create your bouncing simulation here
+
+Console.WriteLine("=== Boundary Collision System ===");
+
+// Create several balls with different starting velocities
+// Each frame: update positions, check boundary collisions, handle bounces
+// Show bounce statistics
+
+// Test framework (uncomment when ready):
+/*
+int screenWidth = 800, screenHeight = 600;
+BoundaryCollider boundary = new BoundaryCollider(screenWidth, screenHeight);
+
+BouncingBall[] balls = {
+    new BouncingBall(100, 100, 20, new Vector2(3, 2)),
+    new BouncingBall(300, 200, 15, new Vector2(-2, 4)),
+    new BouncingBall(500, 300, 25, new Vector2(4, -1))
+};
+
+for (int frame = 1; frame <= 15; frame++)
+{
+    Console.WriteLine($"\n--- Frame {frame} ---");
+    
+    foreach (var ball in balls)
+    {
+        ball.Update();
+        
+        if (boundary.CheckBoundaryCollision(ball))
+        {
+            boundary.HandleBounce(ball);
+            Console.WriteLine($"Ball bounced! Total bounces: {ball.BounceCount}");
+        }
+        
+        Console.WriteLine($"Ball at ({ball.Position.X:F1}, {ball.Position.Y:F1}), velocity ({ball.Velocity.X:F1}, {ball.Velocity.Y:F1})");
+    }
+}
+
+Console.WriteLine("\n--- Final Statistics ---");
+foreach (var ball in balls)
+{
+    Console.WriteLine($"Ball: {ball.BounceCount} total bounces, final speed: {ball.Velocity.Length():F2}");
+}
+*/
+
+#!markdown
+
+---
+
+### Challenge 3: Trigger Zone System 🚨
+**Your Task**: Create trigger zones that detect when objects enter, stay, or exit specific areas.
+
+**Requirements:**
+- Create `TriggerZone` class with rectangular or circular boundaries
+- Track objects entering, staying inside, and exiting zones
+- Support different trigger types: "OnEnter", "OnStay", "OnExit"
+- Objects can trigger different behaviours (speed boost, damage, score points)
+
+#!csharp
+
+using System.Collections.Generic;
+using System.Numerics;
+
+// TODO: Create your TriggerZone class here
+public class TriggerZone
+{
+    // Shape (rectangle or circle), TriggerType, IsActive properties
+    // CheckTrigger(object) method
+    // OnEnter(), OnStay(), OnExit() methods
+}
+
+// TODO: Create your GameObject class here  
+public class GameObject
+{
+    // Position, IsInTrigger properties
+    // UpdatePosition() method
+}
+
+// TODO: Create your trigger system here
+
+Console.WriteLine("=== Trigger Zone System ===");
+
+// Create several trigger zones with different effects
+// Create moving objects that pass through these zones
+// Show trigger events as they happen
+
+// Test framework (uncomment when ready):
+/*
+List<TriggerZone> triggers = new List<TriggerZone>
+{
+    new TriggerZone("SpeedBoost", 100, 100, 80, 60),
+    new TriggerZone("DamageZone", 300, 200, 50),  // Circular damage zone
+    new TriggerZone("ScoreZone", 500, 150, 100, 40)
+};
+
+List<GameObject> objects = new List<GameObject>
+{
+    new GameObject(50, 50),
+    new GameObject(200, 300),
+    new GameObject(400, 100)
+};
+
+for (int frame = 1; frame <= 12; frame++)
+{
+    Console.WriteLine($"\n--- Frame {frame} ---");
+    
+    // Move objects
+    foreach (var obj in objects)
+    {
+        obj.UpdatePosition();
+    }
+    
+    // Check all trigger zones
+    foreach (var trigger in triggers)
+    {
+        foreach (var obj in objects)
+        {
+            trigger.CheckTrigger(obj);
+        }
+    }
+}
+*/
+
+#!markdown
+
+**Success Criteria:**
+- **Challenge 1**: Multiple objects detect and report collisions accurately
+- **Challenge 2**: Objects bounce off boundaries with realistic damping
+- **Challenge 3**: Trigger zones correctly detect enter/stay/exit events
+
+**Hints:**
+- Use the collision detection algorithms from this session
+- Remember to handle edge cases (objects exactly on boundaries)
+- Test with different object sizes and speeds
+- Consider using enums for collision sides and trigger types
+
+---
+
+## 9. Collision Detection Performance Tips
+
+As your games grow more complex, collision detection can become expensive. Here are professional optimization techniques:
+
+### Performance Considerations:
+- **Spatial Partitioning**: Divide the game world into grid cells, only check collisions within nearby cells
+- **Broad Phase + Narrow Phase**: First do cheap distance checks, then expensive precise collision only for close objects
+- **Object Sleeping**: Don't check collisions for stationary objects that haven't moved
+- **Collision Layers**: Only check collisions between objects that should interact
+
+### When to Use Each Type:
+- **AABB (Rectangle)**: Fast, good for most game objects, UI elements
+- **Circle**: Perfect for balls, explosions, circular areas of effect
+- **Point**: Mouse clicks, bullet hits, simple triggers
+- **Mixed Types**: Special cases like ball-paddle games
+
+---
+
+## 10. What's Next?
+
+In our next session (Session 23), we'll combine collision detection with the forces from Session 21 to create **realistic bouncing mechanics**! You'll learn how to:
+- Calculate collision response forces
+- Make objects bounce off each other with correct physics
+- Create elastic and inelastic collisions
+- Build the foundation for a complete Pong game
+
+Then in Session 24, we'll put everything together to create a fully functional **Pong game** with:
+- Paddle movement and ball physics
+- Collision detection and bouncing
+- Score keeping and game states
+- Professional game structure
+
+---
+
+## Key Concepts Learned:
+- **Collision Detection**: Algorithms to determine when objects overlap
+- **AABB Collision**: Fast rectangle-to-rectangle overlap detection
+- **Circle Collision**: Distance-based collision for round objects  
+- **Mixed Collision**: Circle-vs-rectangle detection for complex cases
+- **Point Collision**: Testing if positions are inside shapes
+- **Performance Optimization**: Techniques for efficient collision checking
+- **Visual Debugging**: Using colour changes to show collision states
+
+Excellent work mastering collision detection! You now have the essential algorithms that power physics engines in professional games! 🎯🎮

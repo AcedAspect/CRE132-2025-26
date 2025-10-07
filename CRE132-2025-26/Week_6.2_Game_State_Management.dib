@@ -1,0 +1,888 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Game State Management
+
+## 🎯 Building a "Real" Game!
+
+Congratulations! After mastering C# fundamentals, logic, classes, and physics in Weeks 1-4, you're ready to build **professional-quality games**. This week focuses on the architecture and polish that separates hobby projects from real games.
+
+**Week 5 Learning Goals:**
+- 🎮 **Professional Game Architecture** with proper state management
+- 🖱️ **Interactive Menus** with clickable buttons and navigation
+- 🎬 **Animation Systems** with spritesheets and smooth character movement  
+- 🔊 **Audio Integration** with sound effects and music
+- 🎨 **UI Systems** with custom fonts and polished interfaces
+- 🏗️ **Complete Game Construction** bringing everything together
+
+---
+
+## 1. The Problem: Games Need Multiple "Modes"
+
+Think about any game you've played. It doesn't just throw you straight into action - there are different **states** or **screens**:
+
+### 🎮 **Real Game Examples:**
+- **Minecraft**: Title Screen → World Selection → Gameplay → Pause Menu → Death Screen
+- **Fortnite**: Main Menu → Lobby → Loading → Battle → Victory/Defeat Screen  
+- **Pong**: Menu → Playing → Game Over → Back to Menu
+
+### 🤔 **Without State Management:**
+```csharp
+// This becomes a nightmare quickly!
+while (!Raylib.WindowShouldClose())
+{
+    if (gameStarted && !gameEnded && !gamePaused && showingMenu == false)
+    {
+        // Gameplay logic
+    }
+    else if (!gameStarted && showMenu && !showingCredits)
+    {
+        // Menu logic  
+    }
+    else if (gameEnded && !showingHighScores)
+    {
+        // Game over logic
+    }
+    // This gets messy FAST! 😱
+}
+```
+
+**The Solution:** **Game State Management** - a clean system for organizing different game modes.
+
+---
+
+## 2. Meet Your New Tool: Enums for Game States
+
+An **enum** (enumeration) is like a list of named options. Perfect for game states!
+
+### **Enum Basics:**
+
+#!csharp
+
+// Creating an enum - a list of named constants
+public enum GameState
+{
+    MainMenu,      // Value: 0 (automatically assigned)
+    Playing,       // Value: 1
+    Paused,        // Value: 2
+    GameOver,      // Value: 3
+    Credits        // Value: 4
+}
+
+// Using enums - much cleaner than magic numbers!
+GameState currentState = GameState.MainMenu;
+
+Console.WriteLine($"Current state: {currentState}");
+Console.WriteLine($"State value: {(int)currentState}");
+
+// Switching between states
+currentState = GameState.Playing;
+Console.WriteLine($"Now playing! State: {currentState}");
+
+// You can compare enum values
+if (currentState == GameState.Playing)
+{
+    Console.WriteLine("Game is active - player can move and interact!");
+}
+
+// Converting from numbers back to enum
+GameState restoredState = (GameState)1;  // Playing
+Console.WriteLine($"Restored state: {restoredState}");
+
+#!markdown
+
+### **Why Enums are Perfect for Game States:**
+- **Readable**: `GameState.Playing` is clearer than `gameMode = 2`
+- **Safe**: Can't accidentally set invalid states like `gameMode = 999`
+- **Maintainable**: Easy to add new states without changing existing code
+- **Self-documenting**: The code explains what states exist
+
+---
+
+## 3. State Management Pattern: The Switch Statement
+
+The **switch statement** is perfect for handling different game states cleanly:
+
+#!csharp
+
+public enum SimpleGameState
+{
+    Menu,
+    Playing,
+    GameOver
+}
+
+// Simulate a simple game state system
+SimpleGameState currentState = SimpleGameState.Menu;
+string[] playerActions = { "start", "play", "die", "restart", "quit" };
+
+Console.WriteLine("=== Simple Game State Demonstration ===\n");
+
+for (int i = 0; i < playerActions.Length; i++)
+{
+    string action = playerActions[i];
+    Console.WriteLine($"Player action: '{action}'");
+    
+    // Handle the current state
+    switch (currentState)
+    {
+        case SimpleGameState.Menu:
+            Console.WriteLine("📱 Main Menu Active");
+            if (action == "start")
+            {
+                currentState = SimpleGameState.Playing;
+                Console.WriteLine("🎮 Starting game...");
+            }
+            break;
+            
+        case SimpleGameState.Playing:
+            Console.WriteLine("🎯 Game Active - Player can move and shoot");
+            if (action == "die")
+            {
+                currentState = SimpleGameState.GameOver;
+                Console.WriteLine("💀 Player died!");
+            }
+            break;
+            
+        case SimpleGameState.GameOver:
+            Console.WriteLine("⚰️ Game Over Screen - Show final score");
+            if (action == "restart")
+            {
+                currentState = SimpleGameState.Playing;
+                Console.WriteLine("🔄 Restarting game...");
+            }
+            else if (action == "quit")
+            {
+                currentState = SimpleGameState.Menu;
+                Console.WriteLine("🏠 Returning to main menu...");
+            }
+            break;
+    }
+    
+    Console.WriteLine($"Current State: {currentState}\n");
+}
+
+#!markdown
+
+**Key Pattern:** Each state only responds to relevant actions. The menu doesn't care about "die" actions, and the game over screen doesn't handle movement.
+
+---
+
+## 4. Text Game Example: Adventure State Machine
+
+Let's build a text-based adventure that demonstrates professional state management:
+
+#!csharp
+
+public enum AdventureState
+{
+    MainMenu,
+    Forest,
+    Cave,
+    Treasure,
+    GameOver,
+    Victory
+}
+
+public class AdventureGame
+{
+    public AdventureState CurrentState { get; set; } = AdventureState.MainMenu;
+    public int Health { get; set; } = 100;
+    public bool HasTorch { get; set; } = false;
+    public int Gold { get; set; } = 0;
+    
+    public void ProcessAction(string action)
+    {
+        switch (CurrentState)
+        {
+            case AdventureState.MainMenu:
+                Console.WriteLine("🏰 Welcome to the Adventure!");
+                Console.WriteLine("A dark forest lies ahead...");
+                if (action == "start")
+                {
+                    CurrentState = AdventureState.Forest;
+                    Console.WriteLine("🌲 You enter the mysterious forest...");
+                }
+                break;
+                
+            case AdventureState.Forest:
+                Console.WriteLine($"🌳 You're in a dark forest (Health: {Health})");
+                if (action == "explore")
+                {
+                    if (Random.Shared.Next(2) == 0)
+                    {
+                        HasTorch = true;
+                        Console.WriteLine("🔦 You found a torch! Now you can explore the cave.");
+                    }
+                    else
+                    {
+                        Health -= 20;
+                        Console.WriteLine("🐺 A wolf attacks! You lose 20 health.");
+                        if (Health <= 0)
+                        {
+                            CurrentState = AdventureState.GameOver;
+                            Console.WriteLine("💀 You died in the forest...");
+                        }
+                    }
+                }
+                else if (action == "cave" && HasTorch)
+                {
+                    CurrentState = AdventureState.Cave;
+                    Console.WriteLine("🕳️ Your torch lights the way into the cave...");
+                }
+                else if (action == "cave")
+                {
+                    Console.WriteLine("🕳️ It's too dark! You need a torch first.");
+                }
+                break;
+                
+            case AdventureState.Cave:
+                Console.WriteLine($"🏔️ You're deep in the cave (Health: {Health})");
+                if (action == "treasure")
+                {
+                    CurrentState = AdventureState.Treasure;
+                    Console.WriteLine("💎 You discover a treasure chamber!");
+                }
+                else if (action == "back")
+                {
+                    CurrentState = AdventureState.Forest;
+                    Console.WriteLine("🌲 You return to the forest...");
+                }
+                break;
+                
+            case AdventureState.Treasure:
+                Console.WriteLine("✨ The treasure chamber glows with ancient gold!");
+                if (action == "take")
+                {
+                    Gold = 1000;
+                    CurrentState = AdventureState.Victory;
+                    Console.WriteLine("🏆 You claim the treasure and become rich!");
+                }
+                break;
+                
+            case AdventureState.GameOver:
+                Console.WriteLine("💀 Game Over - Your adventure ends here.");
+                if (action == "restart")
+                {
+                    // Reset game state
+                    CurrentState = AdventureState.MainMenu;
+                    Health = 100;
+                    HasTorch = false;
+                    Gold = 0;
+                    Console.WriteLine("🔄 Starting a new adventure...");
+                }
+                break;
+                
+            case AdventureState.Victory:
+                Console.WriteLine($"🎉 Victory! You escaped with {Gold} gold pieces!");
+                if (action == "restart")
+                {
+                    // Reset for new game
+                    CurrentState = AdventureState.MainMenu;
+                    Health = 100;
+                    HasTorch = false;
+                    Gold = 0;
+                    Console.WriteLine("🔄 Ready for another adventure...");
+                }
+                break;
+        }
+    }
+}
+
+// Test the adventure game
+Console.WriteLine("=== Adventure State Machine Demo ===\n");
+
+AdventureGame game = new AdventureGame();
+string[] gameActions = { "start", "explore", "explore", "cave", "treasure", "take", "restart" };
+
+foreach (string action in gameActions)
+{
+    Console.WriteLine($"Action: '{action}'");
+    game.ProcessAction(action);
+    Console.WriteLine($"Current State: {game.CurrentState}");
+    Console.WriteLine("---");
+}
+
+#!markdown
+
+**Notice the Professional Patterns:**
+- **State-specific logic**: Each state only handles relevant actions
+- **State transitions**: Clear rules for moving between states  
+- **Data persistence**: Health, items, and gold carry between states
+- **Reset functionality**: Easy to restart without recreating objects
+- **Error handling**: Invalid actions are ignored or explained
+
+---
+
+## 5. Raylib Visual Example: Interactive State System
+
+Now let's see state management in action with a visual Raylib example:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+public enum VisualGameState
+{
+    MainMenu,
+    Playing,
+    Paused,
+    GameOver
+}
+
+public class StateDemo
+{
+    public VisualGameState CurrentState { get; set; } = VisualGameState.MainMenu;
+    public Vector2 PlayerPosition { get; set; } = new Vector2(400, 300);
+    public int Score { get; set; } = 0;
+    private float scoreAccumulator = 0; // Float accumulator for smooth scoring
+    public float GameTime { get; set; } = 0;
+    public bool GameWon { get; set; } = false;
+    
+    public void Update()
+    {
+        switch (CurrentState)
+        {
+            case VisualGameState.MainMenu:
+                // Menu logic - check for start input
+                if (Raylib.IsKeyPressed(KeyboardKey.Space))
+                {
+                    CurrentState = VisualGameState.Playing;
+                    // Reset game data
+                    PlayerPosition = new Vector2(400, 300);
+                    Score = 0;
+                    scoreAccumulator = 0; // Reset score accumulator too
+                    GameTime = 0;
+                    GameWon = false;
+                }
+                break;
+                
+            case VisualGameState.Playing:
+                // Game logic - player movement and scoring
+                HandlePlayerInput();
+                UpdateGameplay();
+                
+                // Check for pause
+                if (Raylib.IsKeyPressed(KeyboardKey.P))
+                {
+                    CurrentState = VisualGameState.Paused;
+                }
+                
+                // Check for game over conditions
+                if (GameTime > 10.0f || Score >= 100)
+                {
+                    GameWon = Score >= 100;
+                    CurrentState = VisualGameState.GameOver;
+                }
+                break;
+                
+            case VisualGameState.Paused:
+                // Pause logic - only respond to unpause
+                if (Raylib.IsKeyPressed(KeyboardKey.P))
+                {
+                    CurrentState = VisualGameState.Playing;
+                }
+                break;
+                
+            case VisualGameState.GameOver:
+                // Game over logic - restart option
+                if (Raylib.IsKeyPressed(KeyboardKey.R))
+                {
+                    CurrentState = VisualGameState.MainMenu;
+                }
+                break;
+        }
+    }
+    
+    private void HandlePlayerInput()
+    {
+        Vector2 movement = Vector2.Zero;
+        
+        if (Raylib.IsKeyDown(KeyboardKey.Left)) movement.X -= 200 * Raylib.GetFrameTime();
+        if (Raylib.IsKeyDown(KeyboardKey.Right)) movement.X += 200 * Raylib.GetFrameTime();
+        if (Raylib.IsKeyDown(KeyboardKey.Up)) movement.Y -= 200 * Raylib.GetFrameTime();
+        if (Raylib.IsKeyDown(KeyboardKey.Down)) movement.Y += 200 * Raylib.GetFrameTime();
+        
+        PlayerPosition += movement;
+        
+        // Keep player on screen
+        PlayerPosition = new Vector2(
+            Math.Clamp(PlayerPosition.X, 20, 780),
+            Math.Clamp(PlayerPosition.Y, 20, 580)
+        );
+    }
+    
+    private void UpdateGameplay()
+    {
+        GameTime += Raylib.GetFrameTime();
+        
+        // Simple scoring - gain points for moving (using float accumulator for smooth scoring)
+        if (Raylib.IsKeyDown(KeyboardKey.Left) || Raylib.IsKeyDown(KeyboardKey.Right) ||
+            Raylib.IsKeyDown(KeyboardKey.Up) || Raylib.IsKeyDown(KeyboardKey.Down))
+        {
+            scoreAccumulator += 60 * Raylib.GetFrameTime(); // 60 points per second of movement
+            Score = (int)scoreAccumulator; // Convert to int for display
+        }
+    }
+    
+    public void Draw()
+    {
+        switch (CurrentState)
+        {
+            case VisualGameState.MainMenu:
+                DrawMainMenu();
+                break;
+                
+            case VisualGameState.Playing:
+                DrawGameplay();
+                break;
+                
+            case VisualGameState.Paused:
+                DrawGameplay(); // Show game underneath
+                DrawPauseOverlay();
+                break;
+                
+            case VisualGameState.GameOver:
+                DrawGameOver();
+                break;
+        }
+        
+        // Always show current state for learning
+        Raylib.DrawText($"State: {CurrentState}", 10, 10, 20, Color.Yellow);
+    }
+    
+    private void DrawMainMenu()
+    {
+        Raylib.ClearBackground(Color.DarkBlue);
+        
+        // Title
+        Raylib.DrawText("STATE MANAGEMENT DEMO", 200, 200, 40, Color.White);
+        
+        // Instructions
+        Raylib.DrawText("Press SPACE to Start", 300, 300, 30, Color.LightGray);
+        Raylib.DrawText("Arrow Keys to Move", 300, 340, 20, Color.Gray);
+        Raylib.DrawText("P to Pause", 300, 370, 20, Color.Gray);
+        Raylib.DrawText("R to Restart (from Game Over)", 300, 400, 20, Color.Gray);
+        
+        // Animated background
+        float time = (float)Raylib.GetTime();
+        for (int i = 0; i < 10; i++)
+        {
+            float x = (float)(Math.Sin(time + i) * 100 + 400);
+            float y = (float)(Math.Cos(time + i * 0.5f) * 50 + 500);
+            Raylib.DrawCircle((int)x, (int)y, 5, new Color(0, 255, 255, 128)); // Cyan with 50% alpha
+        }
+    }
+    
+    private void DrawGameplay()
+    {
+        Raylib.ClearBackground(Color.DarkGreen);
+        
+        // Player
+        Raylib.DrawCircle((int)PlayerPosition.X, (int)PlayerPosition.Y, 20, Color.Yellow);
+        
+        // Game UI
+        Raylib.DrawText($"Score: {Score}", 10, 50, 30, Color.White);
+        Raylib.DrawText($"Time: {GameTime:F1}s", 10, 90, 20, Color.White);
+        
+        // Goal indicators
+        Raylib.DrawText("Move around to score points!", 250, 50, 20, Color.LightGray);
+        Raylib.DrawText("Reach 100 points to win!", 250, 80, 20, Color.LightGray);
+        
+        // Progress bar
+        float progress = Math.Min(Score / 100.0f, 1.0f);
+        Raylib.DrawRectangle(250, 110, 300, 20, Color.DarkGray);
+        Raylib.DrawRectangle(250, 110, (int)(300 * progress), 20, Color.Green);
+    }
+    
+    private void DrawPauseOverlay()
+    {
+        // Semi-transparent overlay
+        Raylib.DrawRectangle(0, 0, 800, 600, new Color(0, 0, 0, 179)); // Black with 70% alpha
+        
+        // Pause text
+        Raylib.DrawText("PAUSED", 320, 250, 60, Color.White);
+        Raylib.DrawText("Press P to Resume", 290, 330, 30, Color.LightGray);
+    }
+    
+    private void DrawGameOver()
+    {
+        Color bgColor = GameWon ? Color.DarkGreen : new Color(139, 0, 0, 255); // Dark red
+        Raylib.ClearBackground(bgColor);
+        
+        // Result text
+        string resultText = GameWon ? "YOU WON!" : "TIME'S UP!";
+        Color textColor = GameWon ? Color.Gold : Color.White;
+        Raylib.DrawText(resultText, 280, 200, 50, textColor);
+        
+        // Stats
+        Raylib.DrawText($"Final Score: {Score}", 300, 280, 30, Color.White);
+        Raylib.DrawText($"Time Played: {GameTime:F1}s", 300, 320, 30, Color.White);
+        
+        // Restart instruction
+        Raylib.DrawText("Press R to Return to Menu", 260, 400, 25, Color.LightGray);
+    }
+}
+
+// Run the interactive demo
+Console.WriteLine("Running Interactive State Management Demo...");
+Console.WriteLine("Controls: Arrow Keys = Move, Space = Start, P = Pause, R = Restart");
+
+Raylib.InitWindow(800, 600, "Week 5: Game State Management Demo");
+Raylib.SetTargetFPS(60);
+
+StateDemo demo = new StateDemo();
+
+while (!Raylib.WindowShouldClose())
+{
+    demo.Update();
+    
+    Raylib.BeginDrawing();
+    demo.Draw();
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Professional Patterns Demonstrated:**
+- 🎯 **Clean State Separation**: Each state has distinct update and draw logic
+- 🔄 **Smooth Transitions**: States transition based on clear conditions
+- 💾 **State Persistence**: Game data (score, position) carries between appropriate states
+- 🎨 **Visual Feedback**: Each state has unique visual presentation
+- ⚡ **Performance**: Only relevant logic runs in each state
+
+---
+
+## 6. When to Use State Management
+
+### ✅ **Use State Management For:**
+- **Different Game Screens**: Menu, gameplay, settings, credits
+- **Gameplay Modes**: Single player, multiplayer, tutorial, boss fight
+- **Player States**: Alive, dead, invincible, stunned, celebrating
+- **UI Systems**: Inventory open/closed, dialogue active, shop browsing
+
+### 🚫 **Don't Overuse States For:**
+- **Simple Flags**: `isPaused = true` is fine for simple cases
+- **Temporary Effects**: Brief animations or particle effects
+- **Data Storage**: Use classes and properties for game data
+
+---
+
+## 7. Challenge: Build Your Own State Systems
+
+Time to practice! These challenges will test your understanding of professional state management:
+
+
+### Challenge 1: Text-Based RPG Combat System ⚔️
+**Your Task**: Create a turn-based combat system using state management.
+
+**Requirements:**
+- **States**: `Exploring`, `Combat`, `Victory`, `Defeat`, `Shopping`
+- **Combat Flow**: Player attacks → Enemy attacks → Check for victory/defeat
+- **Game Loop**: Exploration → Random encounters → Combat → Victory rewards → Repeat
+- **Data Tracking**: Player health, enemy health, gold, experience points
+
+**State Transitions:**
+- `Exploring` + encounter → `Combat`
+- `Combat` + enemy defeated → `Victory`
+- `Combat` + player defeated → `Defeat`
+- `Victory` → `Shopping` (spend gold on upgrades)
+- `Shopping` → `Exploring` (continue adventure)
+- `Defeat` → `Exploring` (respawn with penalties)
+
+#!csharp
+
+public enum CombatState
+{
+    // TODO: Define your combat states here
+}
+
+public class RPGCombat
+{
+    // TODO: Add properties for state, player stats, enemy stats, etc.
+    
+    public void ProcessAction(string action)
+    {
+        // TODO: Implement state machine logic
+        // Handle different actions based on current state
+    }
+    
+    public void DisplayStatus()
+    {
+        // TODO: Show current state and relevant information
+    }
+}
+
+// Test your combat system
+Console.WriteLine("=== RPG Combat State System Test ===");
+
+RPGCombat combat = new RPGCombat();
+string[] testActions = { "explore", "fight", "attack", "attack", "shop", "upgrade", "explore" };
+
+foreach (string action in testActions)
+{
+    Console.WriteLine($"\nAction: {action}");
+    // combat.ProcessAction(action);
+    // combat.DisplayStatus();
+}
+
+#!markdown
+
+**Expected Behavior:**
+- Exploring generates random encounters leading to combat
+- Combat alternates between player and enemy turns
+- Victory leads to rewards and shopping opportunities
+- Defeat has consequences but allows continuing
+- State transitions are clear and logical
+
+---
+
+### Challenge 2: Visual Menu Navigation System 🖱️
+**Your Task**: Create a multi-screen menu system with mouse navigation.
+
+**Requirements:**
+- **States**: `MainMenu`, `OptionsMenu`, `CreditsScreen`, `ExitConfirmation`
+- **Navigation**: Click buttons to transition between screens
+- **Visual Feedback**: Hover effects, button highlighting, smooth transitions
+- **Back Navigation**: Proper return paths between all screens
+
+**Button Layout:**
+- **Main Menu**: Play, Options, Credits, Exit
+- **Options Menu**: Sound Volume, Graphics Quality, Controls, Back
+- **Credits Screen**: Developer info, Back to Main
+- **Exit Confirmation**: Yes/No buttons with return to main
+
+#!csharp
+
+public enum MenuState
+{
+    // TODO: Define your menu states
+}
+
+public struct Button
+{
+    // TODO: Create button structure with position, size, text, and state
+}
+
+public class MenuSystem
+{
+    // TODO: Add state management and button handling
+    
+    public void Update()
+    {
+        // TODO: Handle mouse input and state transitions
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render appropriate screen based on current state
+    }
+    
+    private void DrawMainMenu()
+    {
+        // TODO: Draw main menu with buttons
+    }
+    
+    private void DrawOptionsMenu()
+    {
+        // TODO: Draw options screen
+    }
+    
+    private void DrawCreditsScreen()
+    {
+        // TODO: Draw credits information
+    }
+    
+    private void DrawExitConfirmation()
+    {
+        // TODO: Draw exit confirmation dialog
+    }
+    
+    private bool IsButtonClicked(Button button)
+    {
+        // TODO: Check if mouse clicked on button area
+        return false;
+    }
+}
+
+// Test framework (uncomment to test):
+/*
+Raylib.InitWindow(800, 600, "Challenge 2: Menu Navigation System");
+Raylib.SetTargetFPS(60);
+
+MenuSystem menu = new MenuSystem();
+
+while (!Raylib.WindowShouldClose())
+{
+    menu.Update();
+    
+    Raylib.BeginDrawing();
+    menu.Draw();
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+*/
+
+#!markdown
+
+**Success Criteria:**
+- All menu screens render correctly
+- Mouse clicks properly navigate between states
+- Visual feedback for button interactions
+- Proper back navigation from all screens
+- Clean, professional-looking interface
+
+**Hints:**
+- Use `Raylib.GetMousePosition()` and `Raylib.IsMouseButtonPressed()` for input
+- Check if mouse is over button using position and size calculations
+- Use different colors for normal, hovered, and clicked button states
+
+---
+
+### Challenge 3: Advanced Game State Machine 🎮
+**Your Task**: Create a complete game with multiple interconnected states.
+
+**Requirements:**
+- **Core States**: `MainMenu`, `Playing`, `Paused`, `GameOver`, `HighScores`, `Settings`
+- **Gameplay**: Simple action game (shooting, collecting, avoiding obstacles)
+- **Data Persistence**: High scores saved between sessions, settings remembered
+- **Polish Features**: Smooth transitions, particle effects, sound integration preparation
+
+**Advanced Features:**
+- **Sub-states within Playing**: `Normal`, `PowerUp`, `BossMode`
+- **Transition Effects**: Fade in/out between major state changes
+- **Settings System**: Adjustable volume, difficulty, graphics quality
+- **High Score System**: Track and display top 10 scores
+
+#!csharp
+
+public enum GameState
+{
+    // TODO: Define comprehensive game states
+}
+
+public enum PlayingSubState
+{
+    // TODO: Define sub-states for gameplay
+}
+
+public class AdvancedGame
+{
+    // TODO: Create complete game state system with all features
+    
+    public void Update()
+    {
+        // TODO: Handle input and state logic for all states
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render appropriate visuals for each state
+    }
+    
+    private void UpdateMainMenu()
+    {
+        // TODO: Menu logic and navigation
+    }
+    
+    private void UpdateGameplay()
+    {
+        // TODO: Core game mechanics with sub-states
+    }
+    
+    private void UpdateSettings()
+    {
+        // TODO: Settings modification logic
+    }
+    
+    private void DrawWithTransition()
+    {
+        // TODO: Add smooth transition effects between states
+    }
+    
+    private void SaveHighScore(int score)
+    {
+        // TODO: High score persistence (prepare for future file I/O)
+    }
+}
+
+// Advanced test framework:
+/*
+Console.WriteLine("Advanced Game State Machine - Full Implementation");
+Console.WriteLine("This challenge combines all Week 5 concepts:");
+Console.WriteLine("- Professional state management");
+Console.WriteLine("- Interactive menus (next session)");
+Console.WriteLine("- Visual polish and effects");
+Console.WriteLine("- Data persistence concepts");
+
+// Uncomment when ready to test full implementation:
+// AdvancedGame game = new AdvancedGame();
+// Run full game loop with all states...
+*/
+
+#!markdown
+
+**Master-Level Success Criteria:**
+- **Professional Architecture**: Clean separation of states and logic
+- **Smooth User Experience**: Intuitive navigation and feedback
+- **Complete Feature Set**: All required functionality working together
+- **Code Quality**: Well-organized, readable, maintainable code structure
+- **Game Feel**: Polished experience that feels like a real game
+
+**Advanced Hints:**
+- Use float timers for transition effects between states
+- Consider using dictionaries to store settings and high scores
+- Implement a base state class if you want to explore inheritance
+- Plan for integration with upcoming sessions (animation, audio, UI)
+
+---
+
+## 8. Reflection: Professional Game Architecture
+
+After completing these challenges, consider:
+
+1. **State Organization**: How does state management make complex games manageable?
+2. **User Experience**: How do clear state transitions improve player experience?
+3. **Code Maintainability**: Why is this approach easier than boolean flags everywhere?
+4. **Professional Development**: How do these patterns apply to real game engines like Unity?
+
+**Real-World Applications:**
+- **Unity**: StateMachine components and Animator Controllers
+- **Unreal Engine**: Blueprint State Machines and Behavior Trees
+- **Mobile Games**: App lifecycle states (foreground, background, suspended)
+- **Web Games**: Page states and user interaction flows
+
+---
+
+## 9. What's Next?
+
+In **Session 26**, we'll build on state management to create **Interactive Menus** with:
+- 🖱️ **Clickable Buttons** with proper mouse detection
+- 🎨 **Visual Button States** (normal, hovered, pressed, disabled)
+- 🎯 **Menu Navigation** between different game screens
+- ✨ **Button Animations** and hover effects for professional polish
+
+Your state management foundation will make menu systems incredibly straightforward!
+
+---
+
+## Key Concepts Mastered:
+- **Enums**: Type-safe constants for representing game states
+- **Switch Statements**: Clean logic handling for different states
+- **State Machines**: Professional pattern for managing game flow
+- **State Transitions**: Rules for moving between different game modes
+- **Code Organization**: Separating logic by state for maintainability
+- **Professional Architecture**: Industry-standard approaches to game structure
+
+Excellent work mastering game state management! You now think like a professional game developer! 🎮🏆

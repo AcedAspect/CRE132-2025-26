@@ -1,0 +1,221 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Week 2, Session 9: Raylib - Keyboard Input
+
+## 1. Making Things Move
+
+This is the moment games start to feel alive! We are going to take the logic we learned in the last sessions and apply it to our Raylib window. Our goal is to draw a shape on the screen and make it move when the player presses a key.
+
+To do this, we need two things:
+1.  A way to store the shape's position using variables.
+2.  A way to check if a keyboard key is being pressed.
+
+---
+
+## 2. Storing Position
+
+If we want to move a shape, we can't use fixed numbers in our drawing commands. We need to use variables for the X and Y coordinates. An `int` or a `float` is perfect for this.
+
+Let's start by drawing a rectangle in the middle of the screen using variables.
+
+```csharp
+// Player position
+int playerX = 400;
+int playerY = 300;
+
+// Inside the game loop...
+Raylib.DrawRectangle(playerX, playerY, 50, 50, Color.RED);
+```
+
+Now, to move the rectangle, all we have to do is change the value of `playerX` or `playerY`!
+
+---
+
+## 3. Detecting Keyboard Input
+
+Raylib makes it very easy to check the status of a key. The command is `Raylib.IsKeyDown()`. You give it a specific key, and it returns a `bool` (`true` if the key is currently being held down, `false` otherwise).
+
+We can use this inside an `if` statement to create movement logic.
+
+```csharp
+if (Raylib.IsKeyDown(KeyboardKey.Right))
+{
+    // If the RIGHT arrow key is down, increase the player's X position
+    playerX = playerX + 1;
+}
+```
+
+The keys are stored in an `enum` called `KeyboardKey`. You can access them with `KeyboardKey.A`, `KeyboardKey.W`, `KeyboardKey.Space`, etc.
+
+**Important Notes for Raylib-cs:**
+- Always include `#r "nuget: Raylib-cs, 7.0.1"` at the start of your code before using any Raylib functions
+- Raylib-cs uses C# naming conventions (PascalCase), not C++ conventions:
+  - Keys: `KeyboardKey.Right` (not `KEY_RIGHT`)
+  - Colors: `Color.Red` (not `RED`)
+  - Functions and properties follow standard C# naming
+
+Let's put it all together. The code below creates a blue square that you can move around with the arrow keys.
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+const int screenWidth = 800;
+const int screenHeight = 600;
+
+Raylib.InitWindow(screenWidth, screenHeight, "Keyboard Movement");
+Raylib.SetTargetFPS(60);
+
+// Player setup
+int playerX = screenWidth / 2;
+int playerY = screenHeight / 2;
+int playerSpeed = 5;
+
+while (!Raylib.WindowShouldClose())
+{
+    // --- UPDATE LOGIC ---
+    if (Raylib.IsKeyDown(KeyboardKey.Right))
+    {
+        playerX += playerSpeed; // Same as playerX = playerX + playerSpeed;
+    }
+    if (Raylib.IsKeyDown(KeyboardKey.Left))
+    {
+        playerX -= playerSpeed;
+    }
+    if (Raylib.IsKeyDown(KeyboardKey.Up))
+    {
+        playerY -= playerSpeed;
+    }
+    if (Raylib.IsKeyDown(KeyboardKey.Down))
+    {
+        playerY += playerSpeed;
+    }
+
+    // --- DRAWING ---
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.White);
+
+    Raylib.DrawRectangle(playerX - 25, playerY - 25, 50, 50, Color.Blue);
+
+    Raylib.DrawText("Use the arrow keys to move the box!", 10, 10, 20, Color.Black);
+
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+## Use a Function for the Box Moving Demo
+
+The code above works perfectly, but as your games get bigger, you'll want to organize your code better. Here's how using **functions** would improve the box moving demo:
+
+### Current Approach (Everything Mixed Together)
+Right now, all the movement logic and drawing code is crammed into the main game loop. This works for small programs, but becomes messy as you add more features.
+
+### Better Approach (Using Functions)
+Instead, you could split the code into separate functions:
+
+### Why Functions Are Better:
+1. **Cleaner Code**: Your main game loop becomes simple and easy to read
+2. **Easier to Fix**: If movement feels wrong, you only need to look in one place
+3. **Reusable**: You can use the same drawing function for multiple players
+4. **Easier to Add Features**: Want to add boundaries? Just modify the input function!
+
+Think of functions like organizing your room - instead of throwing everything in one big pile, you put similar things together in separate boxes. Your code becomes much easier to find and work with!
+
+#!csharp
+
+using static Raylib_cs.Raylib;
+using Raylib_cs;
+using System.Numerics;
+
+// Initialize the window
+const int screenWidth = 800;
+const int screenHeight = 450;
+InitWindow(screenWidth, screenHeight, "Raylib [C#] - Moving Rectangle with Function Example");
+
+// Set the target FPS
+SetTargetFPS(60);
+
+// Define rectangle properties
+Vector2 rectPosition = new Vector2(screenWidth / 2, screenHeight / 2);
+int rectWidth = 50;
+int rectHeight = 50;
+float speed = 5.0f;
+
+// Main game loop
+while (!WindowShouldClose()) // Detect window close button or ESC key
+{
+    // Update rectangle position
+    rectPosition = UpdateRectanglePosition(rectPosition, speed, rectWidth, rectHeight, screenWidth, screenHeight);
+
+    BeginDrawing();
+    ClearBackground(Color.White);
+
+    DrawRectangle((int)rectPosition.X, (int)rectPosition.Y, rectWidth, rectHeight, Color.Red);
+
+    EndDrawing();
+}
+
+// Close the window and OpenGL context
+CloseWindow();
+
+// Function to update the rectangle's position
+Vector2 UpdateRectanglePosition(Vector2 position, float speed, int rectWidth, int rectHeight, int screenWidth, int screenHeight)
+{
+    // Update position based on cursor keys
+    if (IsKeyDown(KeyboardKey.Right)) position.X += speed;
+    if (IsKeyDown(KeyboardKey.Left)) position.X -= speed;
+    if (IsKeyDown(KeyboardKey.Up)) position.Y -= speed;
+    if (IsKeyDown(KeyboardKey.Down)) position.Y += speed;
+
+    // Prevent the rectangle from moving out of the screen bounds
+    if (position.X < 0) position.X = 0;
+    if (position.X > screenWidth - rectWidth) position.X = screenWidth - rectWidth;
+    if (position.Y < 0) position.Y = 0;
+    if (position.Y > screenHeight - rectHeight) position.Y = screenHeight - rectHeight;
+
+    return position;
+}
+
+#!markdown
+
+### Beginner tips
+
+1. The first code cell now sets up the window and variables. **Run it once**.
+2. The second code cell contains the game loop. **Run it repeatedly** by clicking the run button again after each stop.
+3. Try modifying `playerSpeed` and see how fast the box moves.
+
+
+*Self-Correction Note:* Why did we draw the rectangle at `playerX - 25`? Our `playerX` and `playerY` variables represent the *center* of our player. Since `DrawRectangle` draws from the top-left corner, we have to offset it by half the player's size to make it appear centered.
+
+## 4. Code Challenge: Add Boundaries
+
+**Your Challenge:** Right now, you can move the box completely off the screen. Your task is to add boundary checking.
+
+Modify the code so that the player cannot move outside the window. You will need to add more conditions to your `if` statements.
+
+For example, for the right-side boundary, you would only move the player if the RIGHT key is pressed **AND** the player's X position is less than the screen width.
+
+*Hint: You can combine conditions using the `&&` (AND) operator. `if (condition1 && condition2)`*.
+
+#!csharp
+
+// Your improved movement code goes here!
+
+#!markdown
+
+## 5. Summary
+
+You have just achieved one of the most important milestones in game development: player-controlled movement! You combined variables, conditional logic, and user input to create an interactive graphical application.
+
+In the next session, we will learn about **loops**, which will allow us to handle repetition and create more complex and interesting visuals.

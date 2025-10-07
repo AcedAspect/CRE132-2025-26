@@ -1,0 +1,1230 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Nature of Code (Advanced) - Cellular Automata
+
+## 🌱 Welcome to Emergent Life: When Simple Rules Create Complex Worlds
+
+Today we explore **Cellular Automata** - one of the most fascinating phenomena in computer science! From Conway's famous Game of Life to procedural world generation, these systems show how incredibly simple rules can create astonishingly complex, lifelike patterns.
+
+---
+
+## 1. The Wonder of Emergence
+
+**Emergence** happens when simple rules create complex, unexpected behaviors:
+
+**🌟 Real-World Examples:**
+- 🐦 **Bird Flocks**: Individual birds following simple rules create complex flock patterns
+- 🏙️ **City Growth**: Simple economic rules lead to complex urban development
+- 🧬 **Life Itself**: DNA rules creating the complexity of living organisms
+- 💻 **Internet**: Simple networking protocols creating a global information system
+
+**In Computer Science:**
+- 🎮 **Procedural Generation**: Simple rules creating infinite game worlds
+- 🔥 **Simulation**: Fire spread, fluid flow, population dynamics
+- 🎨 **Art**: Generative patterns and algorithmic beauty
+- 🤖 **AI**: Neural networks emerging from simple mathematical operations
+
+**🔑 Key Insight**: Complexity doesn't require complicated rules - it often emerges from the interaction of many simple parts following basic guidelines!
+
+---
+
+## 2. What Are Cellular Automata?
+
+**Cellular Automata** are systems where:
+
+**🔲 Grid of Cells**: Each cell can be in different states (alive/dead, on/off, etc.)
+**⏰ Time Steps**: The system evolves in discrete time steps
+**📏 Local Rules**: Each cell's next state depends only on itself and its neighbors
+**🔄 Simultaneous Updates**: All cells update at the same time
+
+```
+Simple Example - 1D Automaton:
+Generation 0: [0][1][0][1][0]
+Rule: If neighbors sum to 1, cell becomes 1; otherwise 0
+Generation 1: [1][1][1][1][1]
+Generation 2: [0][0][0][0][0]
+```
+
+**🎯 Most Famous Example**: **Conway's Game of Life** (1970)
+- 2D grid of cells that are either alive or dead
+- Three simple rules determine life and death
+- Creates incredibly complex, lifelike patterns
+
+
+---
+
+## 3. Conway's Game of Life: The Rules
+
+The Game of Life has just **four rules** that govern cell birth, survival, and death:
+
+**📜 The Sacred Rules:**
+
+1. **🏴 Underpopulation**: Any live cell with fewer than 2 neighbors dies (loneliness)
+2. **✅ Survival**: Any live cell with 2 or 3 neighbors survives to next generation
+3. **🏴 Overpopulation**: Any live cell with more than 3 neighbors dies (overcrowding)  
+4. **🌱 Birth**: Any dead cell with exactly 3 neighbors becomes alive (reproduction)
+
+**🤔 Neighbor Count**: Each cell has 8 possible neighbors (including diagonals)
+
+```
+Neighbor positions around cell X:
+[N][N][N]
+[N][X][N]
+[N][N][N]
+```
+
+**🎭 Outcome**: These simple rules create:
+- Stable patterns that never change
+- Oscillators that cycle between states
+- Gliders that move across the grid
+- Complex, seemingly intelligent behaviors
+
+---
+
+## 4. Simple Game of Life Implementation
+
+Let's build Conway's Game of Life step by step:
+
+Left click to add a pixel, right click to delete. Note the key presses available: 
+
+```C#
+    if (Raylib.IsKeyPressed(KeyboardKey.Space)) isRunning = !isRunning;
+    if (Raylib.IsKeyPressed(KeyboardKey.S) && !isRunning) gameOfLife.Update(); // Step one generation
+    if (Raylib.IsKeyPressed(KeyboardKey.C)) gameOfLife.Clear();
+    if (Raylib.IsKeyPressed(KeyboardKey.R)) gameOfLife.Randomize();
+    if (Raylib.IsKeyPressed(KeyboardKey.G)) AddGlider(gameOfLife, 30, 20);
+```
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Game of Life implementation
+public class GameOfLife
+{
+    public int Width, Height;
+    public bool[,] CurrentGeneration;
+    public bool[,] NextGeneration;
+    public int GenerationCount = 0;
+    
+    public GameOfLife(int width, int height)
+    {
+        Width = width;
+        Height = height;
+        CurrentGeneration = new bool[width, height];
+        NextGeneration = new bool[width, height];
+    }
+    
+    public void SetCell(int x, int y, bool alive)
+    {
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            CurrentGeneration[x, y] = alive;
+        }
+    }
+    
+    public bool GetCell(int x, int y)
+    {
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            return CurrentGeneration[x, y];
+        }
+        return false; // Treat out-of-bounds as dead
+    }
+    
+    public int CountLiveNeighbors(int x, int y)
+    {
+        int count = 0;
+        
+        // Check all 8 neighbors
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                // Skip the center cell (not a neighbor of itself)
+                if (dx == 0 && dy == 0) continue;
+                
+                if (GetCell(x + dx, y + dy))
+                {
+                    count++;
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    public void Update()
+    {
+        // Calculate next generation
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                bool currentlyAlive = GetCell(x, y);
+                int neighbors = CountLiveNeighbors(x, y);
+                
+                // Apply Conway's rules
+                if (currentlyAlive)
+                {
+                    // Live cell survival rules
+                    if (neighbors < 2)
+                    {
+                        NextGeneration[x, y] = false; // Underpopulation
+                    }
+                    else if (neighbors == 2 || neighbors == 3)
+                    {
+                        NextGeneration[x, y] = true;  // Survival
+                    }
+                    else
+                    {
+                        NextGeneration[x, y] = false; // Overpopulation
+                    }
+                }
+                else
+                {
+                    // Dead cell birth rule
+                    if (neighbors == 3)
+                    {
+                        NextGeneration[x, y] = true;  // Birth
+                    }
+                    else
+                    {
+                        NextGeneration[x, y] = false; // Stay dead
+                    }
+                }
+            }
+        }
+        
+        // Swap generations
+        bool[,] temp = CurrentGeneration;
+        CurrentGeneration = NextGeneration;
+        NextGeneration = temp;
+        
+        GenerationCount++;
+    }
+    
+    public void Clear()
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                CurrentGeneration[x, y] = false;
+                NextGeneration[x, y] = false;
+            }
+        }
+        GenerationCount = 0;
+    }
+    
+    public void Randomize()
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                CurrentGeneration[x, y] = Raylib.GetRandomValue(0, 100) < 25; // 25% chance of life
+            }
+        }
+        GenerationCount = 0;
+    }
+}
+
+
+// Interactive Game of Life demonstration
+GameOfLife gameOfLife = new GameOfLife(80, 60);
+int cellSize = 10;
+bool isRunning = false;
+float updateTimer = 0;
+float updateInterval = 0.1f; // 10 generations per second
+
+// Add some classic patterns
+void AddGlider(GameOfLife game, int startX, int startY)
+{
+    // Classic glider pattern
+    game.SetCell(startX + 1, startY, true);
+    game.SetCell(startX + 2, startY + 1, true);
+    game.SetCell(startX, startY + 2, true);
+    game.SetCell(startX + 1, startY + 2, true);
+    game.SetCell(startX + 2, startY + 2, true);
+}
+
+void AddOscillator(GameOfLife game, int startX, int startY)
+{
+    // Blinker oscillator
+    game.SetCell(startX, startY, true);
+    game.SetCell(startX + 1, startY, true);
+    game.SetCell(startX + 2, startY, true);
+}
+
+void AddBlock(GameOfLife game, int startX, int startY)
+{
+    // Stable block
+    game.SetCell(startX, startY, true);
+    game.SetCell(startX + 1, startY, true);
+    game.SetCell(startX, startY + 1, true);
+    game.SetCell(startX + 1, startY + 1, true);
+}
+
+// Initialize with some patterns
+AddGlider(gameOfLife, 10, 10);
+AddOscillator(gameOfLife, 20, 15);
+AddBlock(gameOfLife, 5, 25);
+
+Raylib.InitWindow(800, 600, "Conway's Game of Life");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Handle input
+    if (Raylib.IsKeyPressed(KeyboardKey.Space)) isRunning = !isRunning;
+    if (Raylib.IsKeyPressed(KeyboardKey.S) && !isRunning) gameOfLife.Update(); // Step one generation
+    if (Raylib.IsKeyPressed(KeyboardKey.C)) gameOfLife.Clear();
+    if (Raylib.IsKeyPressed(KeyboardKey.R)) gameOfLife.Randomize();
+    if (Raylib.IsKeyPressed(KeyboardKey.G)) AddGlider(gameOfLife, 30, 20);
+    
+    // Speed controls
+    if (Raylib.IsKeyPressed(KeyboardKey.Up)) updateInterval = Math.Max(0.05f, updateInterval - 0.05f);
+    if (Raylib.IsKeyPressed(KeyboardKey.Down)) updateInterval = Math.Min(1.0f, updateInterval + 0.05f);
+    
+    // Mouse interaction - paint cells
+    if (Raylib.IsMouseButtonDown(MouseButton.Left))
+    {
+        int mouseX = Raylib.GetMouseX() / cellSize;
+        int mouseY = Raylib.GetMouseY() / cellSize;
+        gameOfLife.SetCell(mouseX, mouseY, true);
+    }
+    if (Raylib.IsMouseButtonDown(MouseButton.Right))
+    {
+        int mouseX = Raylib.GetMouseX() / cellSize;
+        int mouseY = Raylib.GetMouseY() / cellSize;
+        gameOfLife.SetCell(mouseX, mouseY, false);
+    }
+    
+    // Update simulation
+    if (isRunning)
+    {
+        updateTimer += deltaTime;
+        if (updateTimer >= updateInterval)
+        {
+            gameOfLife.Update();
+            updateTimer = 0;
+        }
+    }
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw cells
+    for (int x = 0; x < gameOfLife.Width; x++)
+    {
+        for (int y = 0; y < gameOfLife.Height; y++)
+        {
+            if (gameOfLife.GetCell(x, y))
+            {
+                Raylib.DrawRectangle(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1, Color.White);
+            }
+        }
+    }
+    
+    // Draw grid lines (subtle)
+    for (int x = 0; x <= gameOfLife.Width; x++)
+    {
+        Raylib.DrawLine(x * cellSize, 0, x * cellSize, gameOfLife.Height * cellSize, new Color(40, 40, 40, 255));
+    }
+    for (int y = 0; y <= gameOfLife.Height; y++)
+    {
+        Raylib.DrawLine(0, y * cellSize, gameOfLife.Width * cellSize, y * cellSize, new Color(40, 40, 40, 255));
+    }
+    
+    // UI
+    Raylib.DrawText("Conway's Game of Life", 10, gameOfLife.Height * cellSize + 10, 16, Color.White);
+    Raylib.DrawText($"Generation: {gameOfLife.GenerationCount}", 10, gameOfLife.Height * cellSize + 35, 12, Color.LightGray);
+    Raylib.DrawText($"Running: {(isRunning ? "YES" : "NO")}", 150, gameOfLife.Height * cellSize + 35, 12, 
+                   isRunning ? Color.Green : Color.Red);
+    Raylib.DrawText($"Speed: {(1.0f / updateInterval):F1} gen/sec", 250, gameOfLife.Height * cellSize + 35, 12, Color.Yellow);
+    
+    // Controls
+    Raylib.DrawText("Controls:", 400, gameOfLife.Height * cellSize + 10, 12, Color.White);
+    Raylib.DrawText("SPACE: Play/Pause", 400, gameOfLife.Height * cellSize + 25, 10, Color.LightGray);
+    Raylib.DrawText("S: Step one generation", 400, gameOfLife.Height * cellSize + 40, 10, Color.LightGray);
+    Raylib.DrawText("C: Clear  R: Random", 400, gameOfLife.Height * cellSize + 55, 10, Color.LightGray);
+    
+    Raylib.DrawText("Mouse: Paint/Erase cells", 550, gameOfLife.Height * cellSize + 10, 10, Color.LightGray);
+    Raylib.DrawText("↑↓: Change speed", 550, gameOfLife.Height * cellSize + 25, 10, Color.LightGray);
+    Raylib.DrawText("G: Add glider pattern", 550, gameOfLife.Height * cellSize + 40, 10, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🌱 Life is Born!** You've created Conway's Game of Life!
+
+**What You're Seeing:**
+- **Emergent Patterns**: Complex behaviors arising from four simple rules
+- **Different Lifestyles**: Still lifes, oscillators, and moving patterns
+- **Interactive Evolution**: Paint your own patterns and watch them evolve
+- **Infinite Possibility**: Every configuration leads to unique evolutionary paths
+
+
+---
+
+## 5. Famous Game of Life Patterns
+
+The Game of Life community has discovered thousands of fascinating patterns over 50+ years:
+
+**🏠 Still Lifes** (never change):
+- **Block**: 2×2 square - the simplest stable pattern
+- **Beehive**: 6-cell hexagonal pattern
+- **Loaf**: 7-cell bread-like shape
+
+**🔄 Oscillators** (repeat in cycles):
+- **Blinker**: 3 cells in a line, period 2
+- **Toad**: 6-cell pattern, period 2  
+- **Beacon**: 6-cell pattern, period 2
+- **Pulsar**: 13×13 pattern, period 3
+
+**🚀 Spaceships** (move across the grid):
+- **Glider**: 5-cell pattern moving diagonally every 4 generations
+- **Lightweight Spaceship (LWSS)**: Moves horizontally
+- **Middleweight/Heavyweight Spaceships**: Larger, faster ships
+
+**🏭 Complex Machines**:
+- **Glider Guns**: Continuously produce gliders
+- **Puffer Trains**: Leave trails of debris
+- **Replicators**: Create copies of themselves
+
+---
+
+## 6. Other Cellular Automata: Beyond Life
+
+Conway's Game of Life is just one example! Let's explore other fascinating automata:
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Generalized cellular automaton for different rulesets
+public class CellularAutomaton
+{
+    public int Width, Height;
+    public int[,] CurrentGeneration;
+    public int[,] NextGeneration;
+    public int NumStates;
+    public string RuleName;
+    
+    public CellularAutomaton(int width, int height, int numStates, string ruleName)
+    {
+        Width = width;
+        Height = height;
+        NumStates = numStates;
+        RuleName = ruleName;
+        CurrentGeneration = new int[width, height];
+        NextGeneration = new int[width, height];
+        
+        // Initialize Langton's Ant if needed
+        if (ruleName == "Langton's Ant")
+        {
+            AntX = width / 2;
+            AntY = height / 2;
+            AntDirection = 0;
+        }
+    }
+    
+    public void SetCell(int x, int y, int state)
+    {
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            CurrentGeneration[x, y] = state % NumStates;
+        }
+    }
+    
+    public int GetCell(int x, int y)
+    {
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            return CurrentGeneration[x, y];
+        }
+        return 0;
+    }
+    
+    public int CountNeighborsOfState(int x, int y, int targetState)
+    {
+        int count = 0;
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx == 0 && dy == 0) continue;
+                if (GetCell(x + dx, y + dy) == targetState)
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+    
+    public void UpdateBriansBrain()
+    {
+        // Brian's Brain: 0=dead, 1=dying, 2=alive
+        // Rules: Alive -> Dying -> Dead -> (Alive if exactly 2 alive neighbors)
+        
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                int currentState = GetCell(x, y);
+                int aliveNeighbors = CountNeighborsOfState(x, y, 2);
+                
+                switch (currentState)
+                {
+                    case 0: // Dead
+                        NextGeneration[x, y] = (aliveNeighbors == 2) ? 2 : 0;
+                        break;
+                    case 1: // Dying
+                        NextGeneration[x, y] = 0; // Becomes dead
+                        break;
+                    case 2: // Alive
+                        NextGeneration[x, y] = 1; // Becomes dying
+                        break;
+                }
+            }
+        }
+        
+        SwapGenerations();
+    }
+    
+    public void UpdateWireWorld()
+    {
+        // WireWorld: 0=empty, 1=wire, 2=electron_head, 3=electron_tail
+        // Rules: head->tail, tail->wire, wire->head if 1-2 heads nearby
+        
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                int currentState = GetCell(x, y);
+                
+                switch (currentState)
+                {
+                    case 0: // Empty space
+                        NextGeneration[x, y] = 0;
+                        break;
+                    case 1: // Wire
+                        int headNeighbors = CountNeighborsOfState(x, y, 2);
+                        NextGeneration[x, y] = (headNeighbors == 1 || headNeighbors == 2) ? 2 : 1;
+                        break;
+                    case 2: // Electron head
+                        NextGeneration[x, y] = 3; // Becomes tail
+                        break;
+                    case 3: // Electron tail
+                        NextGeneration[x, y] = 1; // Becomes wire
+                        break;
+                }
+            }
+        }
+        
+        SwapGenerations();
+    }
+    
+    // Langton's Ant specific variables
+    public int AntX, AntY, AntDirection; // 0=North, 1=East, 2=South, 3=West
+    
+    public void UpdateLangtonAnt()
+    {
+        // Real Langton's Ant rules:
+        // 1. If on white (0): turn right, flip to black (1), move forward
+        // 2. If on black (1): turn left, flip to white (0), move forward
+        
+        int currentCell = GetCell(AntX, AntY);
+        
+        if (currentCell == 0) // On white cell
+        {
+            AntDirection = (AntDirection + 1) % 4; // Turn right
+            CurrentGeneration[AntX, AntY] = 1; // Flip to black
+        }
+        else // On black cell
+        {
+            AntDirection = (AntDirection + 3) % 4; // Turn left (same as -1 mod 4)
+            CurrentGeneration[AntX, AntY] = 0; // Flip to white
+        }
+        
+        // Move ant forward based on direction
+        switch (AntDirection)
+        {
+            case 0: AntY = (AntY - 1 + Height) % Height; break; // North
+            case 1: AntX = (AntX + 1) % Width; break;           // East
+            case 2: AntY = (AntY + 1) % Height; break;          // South
+            case 3: AntX = (AntX - 1 + Width) % Width; break;   // West
+        }
+        
+        // No need for SwapGenerations - ant modifies grid directly
+    }
+    
+    private void SwapGenerations()
+    {
+        int[,] temp = CurrentGeneration;
+        CurrentGeneration = NextGeneration;
+        NextGeneration = temp;
+    }
+    
+    public void Randomize()
+    {
+        // Different initialization strategies for different automata
+        if (RuleName == "WireWorld")
+        {
+            CreateWireWorldCircuit();
+        }
+        else if (RuleName == "Langton's Ant")
+        {
+            InitializeLangtonsAnt();
+        }
+        else
+        {
+            // Standard randomization for other automata
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    CurrentGeneration[x, y] = Raylib.GetRandomValue(0, NumStates - 1);
+                }
+            }
+        }
+    }
+    
+    public void CreateWireWorldCircuit()
+    {
+        // Clear grid first
+        Clear();
+        
+        // Create a simple wire circuit with electron flow
+        int centerX = Width / 2;
+        int centerY = Height / 2;
+        int radius = Math.Min(Width, Height) / 4;
+        
+        // Create circular wire
+        for (int angle = 0; angle < 360; angle += 5)
+        {
+            double radians = angle * Math.PI / 180.0;
+            int x = centerX + (int)(radius * Math.Cos(radians));
+            int y = centerY + (int)(radius * Math.Sin(radians));
+            
+            if (x >= 0 && x < Width && y >= 0 && y < Height)
+            {
+                CurrentGeneration[x, y] = 1; // Wire
+            }
+        }
+        
+        // Add some straight wires
+        for (int x = centerX - radius; x <= centerX + radius; x++)
+        {
+            if (x >= 0 && x < Width && centerY >= 0 && centerY < Height)
+            {
+                CurrentGeneration[x, centerY] = 1; // Horizontal wire
+            }
+        }
+        
+        for (int y = centerY - radius; y <= centerY + radius; y++)
+        {
+            if (centerX >= 0 && centerX < Width && y >= 0 && y < Height)
+            {
+                CurrentGeneration[centerX, y] = 1; // Vertical wire
+            }
+        }
+        
+        // Add a few electron heads to start the flow
+        if (centerX + radius/2 < Width)
+            CurrentGeneration[centerX + radius/2, centerY] = 2; // Electron head
+        if (centerX - radius/2 >= 0)
+            CurrentGeneration[centerX - radius/2, centerY] = 2; // Electron head
+    }
+    
+    public void InitializeLangtonsAnt()
+    {
+        // Clear grid and place ant in center
+        Clear();
+        AntX = Width / 2;
+        AntY = Height / 2;
+        AntDirection = 0; // Start facing north
+    }
+    
+    public void Clear()
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                CurrentGeneration[x, y] = 0;
+                NextGeneration[x, y] = 0;
+            }
+        }
+    }
+    
+    public Color GetColorForState(int state)
+    {
+        switch (RuleName)
+        {
+            case "Brian's Brain":
+                return state switch
+                {
+                    0 => Color.Black,      // Dead
+                    1 => Color.Blue,       // Dying
+                    2 => Color.White,      // Alive
+                    _ => Color.Gray
+                };
+            
+            case "WireWorld":
+                return state switch
+                {
+                    0 => Color.Black,      // Empty
+                    1 => Color.Yellow,     // Wire
+                    2 => Color.Blue,       // Electron head
+                    3 => Color.Red,        // Electron tail
+                    _ => Color.Gray
+                };
+            
+            default:
+                return state == 1 ? Color.White : Color.Black;
+        }
+    }
+}
+
+
+// Interactive demonstration of different cellular automata
+CellularAutomaton currentAutomaton = new CellularAutomaton(80, 60, 3, "Brian's Brain");
+int cellSize = 8;
+bool isRunning = false;
+float updateTimer = 0;
+float updateInterval = 0.2f;
+int currentRuleIndex = 0;
+string[] ruleNames = { "Brian's Brain", "WireWorld", "Langton's Ant" };
+
+void SwitchRule(int ruleIndex)
+{
+    string ruleName = ruleNames[ruleIndex];
+    int numStates = ruleName == "Brian's Brain" ? 3 : (ruleName == "WireWorld" ? 4 : 2);
+    currentAutomaton = new CellularAutomaton(80, 60, numStates, ruleName);
+    currentAutomaton.Randomize();
+}
+
+// Initialize with first rule
+SwitchRule(0);
+
+Raylib.InitWindow(640, 600, "Advanced Cellular Automata");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Handle input
+    if (Raylib.IsKeyPressed(KeyboardKey.Space)) isRunning = !isRunning;
+    if (Raylib.IsKeyPressed(KeyboardKey.S) && !isRunning)
+    {
+        // Step one generation
+        switch (currentAutomaton.RuleName)
+        {
+            case "Brian's Brain": currentAutomaton.UpdateBriansBrain(); break;
+            case "WireWorld": currentAutomaton.UpdateWireWorld(); break;
+            case "Langton's Ant": currentAutomaton.UpdateLangtonAnt(); break;
+        }
+    }
+    if (Raylib.IsKeyPressed(KeyboardKey.C)) currentAutomaton.Clear();
+    if (Raylib.IsKeyPressed(KeyboardKey.R)) currentAutomaton.Randomize();
+    
+    // Switch between different rules
+    if (Raylib.IsKeyPressed(KeyboardKey.Tab))
+    {
+        currentRuleIndex = (currentRuleIndex + 1) % ruleNames.Length;
+        SwitchRule(currentRuleIndex);
+    }
+    
+    // Speed controls
+    if (Raylib.IsKeyPressed(KeyboardKey.Up)) updateInterval = Math.Max(0.05f, updateInterval - 0.05f);
+    if (Raylib.IsKeyPressed(KeyboardKey.Down)) updateInterval = Math.Min(1.0f, updateInterval + 0.05f);
+    
+    // Mouse interaction
+    if (Raylib.IsMouseButtonDown(MouseButton.Left))
+    {
+        int mouseX = Raylib.GetMouseX() / cellSize;
+        int mouseY = Raylib.GetMouseY() / cellSize;
+        int newState = (currentAutomaton.GetCell(mouseX, mouseY) + 1) % currentAutomaton.NumStates;
+        currentAutomaton.SetCell(mouseX, mouseY, newState);
+    }
+    
+    // Update simulation
+    if (isRunning)
+    {
+        updateTimer += deltaTime;
+        if (updateTimer >= updateInterval)
+        {
+            switch (currentAutomaton.RuleName)
+            {
+                case "Brian's Brain": currentAutomaton.UpdateBriansBrain(); break;
+                case "WireWorld": currentAutomaton.UpdateWireWorld(); break;
+                case "Langton's Ant": currentAutomaton.UpdateLangtonAnt(); break;
+            }
+            updateTimer = 0;
+        }
+    }
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw cells
+    for (int x = 0; x < currentAutomaton.Width; x++)
+    {
+        for (int y = 0; y < currentAutomaton.Height; y++)
+        {
+            int state = currentAutomaton.GetCell(x, y);
+            if (state > 0)
+            {
+                Color cellColor = currentAutomaton.GetColorForState(state);
+                Raylib.DrawRectangle(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1, cellColor);
+            }
+        }
+    }
+    
+    // Draw Langton's Ant if applicable
+    if (currentAutomaton.RuleName == "Langton's Ant")
+    {
+        int antScreenX = currentAutomaton.AntX * cellSize + cellSize / 2;
+        int antScreenY = currentAutomaton.AntY * cellSize + cellSize / 2;
+        
+        // Draw ant as a colored circle
+        Raylib.DrawCircle(antScreenX, antScreenY, cellSize / 3, Color.Red);
+        
+        // Draw direction indicator
+        int dirX = 0, dirY = 0;
+        switch (currentAutomaton.AntDirection)
+        {
+            case 0: dirY = -cellSize / 2; break; // North
+            case 1: dirX = cellSize / 2; break;  // East
+            case 2: dirY = cellSize / 2; break;  // South
+            case 3: dirX = -cellSize / 2; break; // West
+        }
+        
+        Raylib.DrawLine(antScreenX, antScreenY, antScreenX + dirX, antScreenY + dirY, Color.Yellow);
+    }
+    
+    // UI
+    Raylib.DrawText($"Cellular Automaton: {currentAutomaton.RuleName}", 10, currentAutomaton.Height * cellSize + 10, 16, Color.White);
+    Raylib.DrawText($"Running: {(isRunning ? "YES" : "NO")}", 10, currentAutomaton.Height * cellSize + 35, 12, 
+                   isRunning ? Color.Green : Color.Red);
+    Raylib.DrawText($"Speed: {(1.0f / updateInterval):F1} gen/sec", 150, currentAutomaton.Height * cellSize + 35, 12, Color.Yellow);
+    
+    // Controls
+    Raylib.DrawText("Controls:", 300, currentAutomaton.Height * cellSize + 10, 12, Color.White);
+    Raylib.DrawText("SPACE: Play/Pause", 300, currentAutomaton.Height * cellSize + 25, 10, Color.LightGray);
+    Raylib.DrawText("TAB: Switch rule", 300, currentAutomaton.Height * cellSize + 40, 10, Color.LightGray);
+    // Show state information based on automaton type
+    string stateInfo = currentAutomaton.RuleName switch
+    {
+        "Brian's Brain" => "States: Black/Dead, Blue/Dying, White/Alive",
+        "WireWorld" => "States: Black/Empty, Yellow/Wire, Blue/Head, Red/Tail",
+        "Langton's Ant" => $"States: Black/Off, White/On (simplified ant rules) | Ant: ({currentAutomaton.AntX}, {currentAutomaton.AntY}) Dir: {(new[] { "North", "East", "South", "West" })[currentAutomaton.AntDirection]}",
+        _ => "States: Black/Off, White/On"
+    };
+    
+    Raylib.DrawText(stateInfo, 10, currentAutomaton.Height * cellSize + 55, 10, Color.LightGray);
+    Raylib.DrawText("S: Step  C: Clear  R: Random", 300, currentAutomaton.Height * cellSize + 55, 10, Color.LightGray);
+    
+    // Rule-specific info
+    switch (currentAutomaton.RuleName)
+    {
+        case "Brian's Brain":
+            Raylib.DrawText("States: Black=Dead, Blue=Dying, White=Alive", 10, currentAutomaton.Height * cellSize + 55, 10, Color.SkyBlue);
+            break;
+        case "WireWorld":
+            Raylib.DrawText("States: Black=Empty, Yellow=Wire, Blue=Head, Red=Tail", 10, currentAutomaton.Height * cellSize + 55, 10, Color.SkyBlue);
+            break;
+        case "Langton's Ant":
+            Raylib.DrawText("States: Black=Off, White=On (simplified ant rules)", 10, currentAutomaton.Height * cellSize + 55, 10, Color.SkyBlue);
+            break;
+    }
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**🔥 Amazing Diversity!** Each rule set creates completely different behaviors:
+
+**🧠 Brian's Brain**: 
+- Three-state system with beautiful, chaotic patterns
+- Patterns tend to spread and create organic, brain-like structures
+
+**⚡ WireWorld**: 
+- Simulates electrical circuits with wires and moving electrons
+- Can build actual logic gates and computational circuits
+
+**🐜 Langton's Ant**: 
+- Simple rules that create incredibly complex, unpredictable patterns
+- Shows how emergence can create apparent randomness from deterministic rules
+
+
+---
+
+## 7. Game Applications: Cellular Automata in Action
+
+Cellular automata aren't just academic curiosities - they're powerful tools for game development:
+
+**🔥 Fire and Explosion Simulation**:
+```csharp
+// Fire spread rules:
+// 0=empty, 1=burning, 2=ash
+// Fire spreads to empty cells, burns out to ash
+```
+
+**🌊 Fluid Simulation**:
+- Water flow and pressure simulation
+- Cave flooding and liquid dynamics
+- Realistic wave propagation
+
+**🗺️ Procedural World Generation**:
+- Cave systems using cellular automata smoothing
+- Organic coastlines and island shapes
+- Forest growth and ecosystem simulation
+
+**💥 Destruction and Physics**:
+- Building collapse simulation
+- Particle system behaviors
+- Dynamic terrain modification
+
+**🧟 AI and Behavior**:
+- Crowd behavior and pathfinding
+- Disease/infection spread mechanics
+- Territory control and influence maps
+
+---
+
+## 8. Challenge Time! Master Emergent Systems
+
+Test your cellular automata programming skills:
+
+### Challenge 1: Fire Spread Simulation 🔥
+**Your Task**: Create a realistic fire simulation for game environments.
+
+**Requirements:**
+- Three states: Empty (0), Burning (1), Burnt/Ash (2)
+- Fire spreads to adjacent empty cells with probability
+- Burning cells eventually burn out and become ash
+- Wind direction affects spread patterns
+- Interactive fire starting with mouse clicks
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// TODO: Create your fire simulation system
+
+public class FireSimulation
+{
+    public int Width, Height;
+    public int[,] Current, Next;
+    public Vector2 WindDirection = new Vector2(1, 0); // Wind affects spread
+    public float SpreadProbability = 0.3f;
+    public int BurnDuration = 5; // Generations before burning out
+    
+    public FireSimulation(int width, int height)
+    {
+        // TODO: Initialize fire simulation
+    }
+    
+    public void Update()
+    {
+        // TODO: Implement fire spread rules
+        // TODO: Consider wind direction for spread probability
+        // TODO: Handle burning duration and ash creation
+    }
+    
+    public void StartFire(int x, int y)
+    {
+        // TODO: Ignite fire at position
+    }
+    
+    public void SetWind(Vector2 direction)
+    {
+        // TODO: Update wind direction
+    }
+    
+    public void Draw(int cellSize)
+    {
+        // TODO: Draw fire states with appropriate colors
+        // TODO: Show wind direction indicator
+    }
+}
+
+// Test framework:
+// FireSimulation fire = new FireSimulation(100, 75);
+
+Console.WriteLine("Create a fire spread simulation!");
+Console.WriteLine("Requirements: Spread probability, wind effects, burn duration");
+
+#!markdown
+
+**Expected Behavior:**
+- Fire spreads realistically based on probability and wind
+- Visual wind direction indicator affects spread patterns
+- Burning areas eventually burn out and leave ash
+- Interactive fire starting creates dynamic scenarios
+
+---
+
+### Challenge 2: Cave Generation System 🏔️
+**Your Task**: Create a cellular automaton for procedural cave generation.
+
+**Requirements:**
+- Start with random noise (rock vs empty space)
+- Apply smoothing rules to create natural cave shapes
+- Multiple iterations create organic, connected cave systems
+- Generate caves suitable for game levels
+- Export cave data for collision detection
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// TODO: Create your cave generation system
+
+public class CaveGenerator
+{
+    public int Width, Height;
+    public bool[,] CaveMap;
+    public float InitialDensity = 0.45f; // Starting rock density
+    
+    public CaveGenerator(int width, int height)
+    {
+        // TODO: Initialize cave generator
+    }
+    
+    public void GenerateInitialNoise()
+    {
+        // TODO: Create random rock/empty distribution
+    }
+    
+    public int CountRockNeighbors(int x, int y, int radius = 1)
+    {
+        // TODO: Count rock cells within radius
+        return 0;
+    }
+    
+    public void SmoothIteration()
+    {
+        // TODO: Apply cellular automaton smoothing rules
+        // TODO: If 5+ neighbors are rock, become rock
+        // TODO: If 4+ neighbors are empty, become empty
+    }
+    
+    public void GenerateCave(int iterations = 5)
+    {
+        // TODO: Generate initial noise then smooth multiple times
+    }
+    
+    public void FloodFillLargestCave()
+    {
+        // TODO: Find and keep only the largest connected cave area
+        // TODO: Fill smaller isolated caves
+    }
+    
+    public void Draw(int cellSize)
+    {
+        // TODO: Draw cave map with rock and empty areas
+    }
+}
+
+// Test framework:
+// CaveGenerator caveGen = new CaveGenerator(120, 80);
+
+Console.WriteLine("Create a cave generation system!");
+Console.WriteLine("Requirements: Noise generation, smoothing iterations, natural caves");
+
+#!markdown
+
+**Expected Behavior:**
+- Initial random noise creates chaotic rock/empty distribution
+- Smoothing iterations gradually form natural cave shapes
+- Multiple iterations create organic, connected cave systems
+- Final caves suitable for platformer or exploration games
+
+---
+
+### Challenge 3: Custom Rule Explorer 🔬
+**Your Task**: Create a system for experimenting with custom cellular automaton rules.
+
+**Requirements:**
+- User-definable rules for birth and survival conditions
+- Interactive rule editor with live preview
+- Save/load interesting rule discoveries
+- Visual pattern library showing rule behaviors
+- Performance optimization for large grids
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// TODO: Create your custom rule explorer
+
+public struct CARule
+{
+    public HashSet<int> BirthConditions;  // Neighbor counts that create life
+    public HashSet<int> SurvivalConditions; // Neighbor counts that sustain life
+    public string Name;
+    
+    public CARule(string name, int[] birth, int[] survival)
+    {
+        Name = name;
+        BirthConditions = new HashSet<int>(birth);
+        SurvivalConditions = new HashSet<int>(survival);
+    }
+}
+
+public class RuleExplorer
+{
+    public int Width, Height;
+    public bool[,] Current, Next;
+    public CARule CurrentRule;
+    public List<CARule> SavedRules = new List<CARule>();
+    
+    // Famous rules
+    public static CARule ConwayLife = new CARule("Conway's Life", new[] {3}, new[] {2, 3});
+    public static CARule HighLife = new CARule("HighLife", new[] {3, 6}, new[] {2, 3});
+    public static CARule Seeds = new CARule("Seeds", new[] {2}, new int[] {});
+    public static CARule Maze = new CARule("Maze", new[] {3}, new[] {1, 2, 3, 4, 5});
+    
+    public RuleExplorer(int width, int height)
+    {
+        // TODO: Initialize rule explorer
+        // TODO: Load default famous rules
+    }
+    
+    public void ApplyRule(CARule rule)
+    {
+        // TODO: Apply cellular automaton rule to grid
+    }
+    
+    public void EditRule(int neighbor, bool isBirth, bool add)
+    {
+        // TODO: Modify current rule interactively
+    }
+    
+    public void SaveCurrentRule(string name)
+    {
+        // TODO: Save current rule to collection
+    }
+    
+    public void DrawRuleEditor()
+    {
+        // TODO: Draw interactive rule editing interface
+        // TODO: Show birth/survival conditions
+        // TODO: Allow clicking to toggle conditions
+    }
+    
+    public void DrawPatternLibrary()
+    {
+        // TODO: Show thumbnails of different rule behaviors
+        // TODO: Click to load different rules
+    }
+}
+
+// Test framework:
+// RuleExplorer explorer = new RuleExplorer(100, 75);
+
+Console.WriteLine("Create a custom rule explorer!");
+Console.WriteLine("Requirements: Rule editing, pattern library, save/load, optimization");
+
+#!markdown
+
+**Expected Behavior:**
+- Interactive rule editor for creating custom cellular automata
+- Real-time preview of rule effects on pattern evolution
+- Pattern library showcasing different rule behaviors
+- Save system for preserving interesting discoveries
+- Performance optimization for smooth large-grid simulation
+
+---
+
+## 9. Challenge Reflection
+
+After exploring cellular automata, consider:
+
+1. **How do simple rules create such complex, lifelike behaviors?**
+2. **What makes cellular automata useful for game development?**
+3. **How could you combine cellular automata with other game systems?**
+4. **What are the performance considerations for real-time cellular automata?**
+5. **How do cellular automata relate to real-world natural processes?**
+
+---
+
+## 10. The Deep Beauty of Emergence
+
+**🌌 Philosophical Impact**: Cellular automata demonstrate that:
+- **Complexity emerges from simplicity** - profound behaviors from basic rules
+- **No central control needed** - order can arise spontaneously  
+- **Small changes have big effects** - initial conditions dramatically affect outcomes
+- **Computation is everywhere** - universe itself might be computational
+
+**🎮 Game Development Applications**:
+- **Procedural Generation**: Infinite, organic worlds and levels
+- **Realistic Simulation**: Fire, water, destruction, and natural phenomena
+- **AI Behavior**: Crowd dynamics and emergent group intelligence
+- **Visual Effects**: Particles, growth patterns, and dynamic systems
+
+**🔬 Real-World Connections**:
+- **Biology**: Cell growth, organism development, ecosystem dynamics
+- **Physics**: Crystal formation, fluid dynamics, pattern formation
+- **Sociology**: Social network spread, urban development, cultural evolution
+- **Computer Science**: Parallel computing, artificial life, complexity theory
+
+---
+
+## 11. What's Next: The Final Stretch!
+
+Congratulations! You've explored the deepest mysteries of emergence and complexity! In our final Week 6 sessions:
+
+- **Session 35**: **Final Project Workshop** - Combine everything you've learned into your unique game creation
+- **Session 36**: **Course Wrap-up & Next Steps** - Preparing for Unity, career paths, and continuing your game development journey
+
+---
+
+## Key Concepts Mastered:
+
+- **Cellular Automata Fundamentals**: Grid-based systems with local rules and emergent behaviors
+- **Conway's Game of Life**: The classic four-rule system demonstrating emergence and complexity
+- **Alternative Rule Systems**: Brian's Brain, WireWorld, and custom automata with different behaviors
+- **Game Applications**: Fire simulation, cave generation, and procedural world creation
+- **Emergence Understanding**: How simple rules create complex, seemingly intelligent behaviors
+- **Performance Patterns**: Efficient grid updating and optimization techniques for real-time simulation
+- **Pattern Recognition**: Still lifes, oscillators, spaceships, and complex machine behaviors
+- **Interactive Systems**: Rule editing, pattern exploration, and real-time parameter modification
+
+**🌱 Emergence Mastery Achieved!** You now understand one of the most profound concepts in computer science - how complexity and apparent intelligence can emerge from simple, deterministic rules! Your cellular automata knowledge applies to procedural generation, simulation systems, and understanding the computational nature of reality itself!
+
+**🔬 Complexity Science Expert** - You've completed the advanced topics that separate hobbyist programmers from those who understand the deep principles underlying game systems and computational creativity! 🎮✨
+
+---
+
+## Session 34 Complete! 🌟
+
+You've journeyed from basic programming concepts to advanced emergent systems. The final sessions will bring everything together into your capstone project and prepare you for professional game development with Unity and beyond!

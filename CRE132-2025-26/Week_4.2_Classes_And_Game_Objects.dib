@@ -1,0 +1,580 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Week 3, Session 16: Intro to Classes & Objects
+
+## 1. Recap: What We've Learned So Far
+
+Over the past weeks, we've built a solid foundation:
+- **Variables and Data Types**: Storing information like `int health = 100`
+- **Methods**: Organising code into reusable blocks like `HandleInput()` and `DrawGame()`
+- **Code Organisation**: Creating clean, professional game loops
+
+But what happens when we need to manage multiple players, enemies, or items? Each player has health, position, score, and colour. Each enemy has position, speed, and damage. How do we keep all this organised?
+
+The answer is **Classes and Objects** - the foundation of modern game programming.
+
+---
+
+## 2. Real-World Analogy: Car Blueprint vs Actual Cars
+
+Think of a **class** like a blueprint for a car:
+- The blueprint defines what every car should have: wheels, engine, colour, speed
+- The blueprint isn't a real car - you can't drive it!
+
+An **object** is an actual car built from that blueprint:
+- My red Ford has 4 wheels, a petrol engine, red paint, and can go 120mph
+- Your blue BMW has 4 wheels, a different engine, blue paint, and can go 150mph
+- Both are cars (same blueprint) but with different specific values
+
+In programming:
+- **Class** = The blueprint/template (defines what properties and methods something should have)
+- **Object** = A specific instance created from that class (with actual values)
+
+---
+
+## 3. Your First Class: A Simple Player
+
+Let's create a `Player` class to represent a game character:
+
+#!csharp
+
+// Define a Player class (this is the blueprint)
+public class Player
+{
+    // Properties - what every player has
+    public string Name;
+    public int Health;
+    public int Score;
+    public float X;
+    public float Y;
+    
+    // Constructor - runs when we create a new player
+    public Player(string name, float startX, float startY)
+    {
+        Name = name;
+        Health = 100;
+        Score = 0;
+        X = startX;
+        Y = startY;
+    }
+    
+    // Methods - what every player can do
+    public void TakeDamage(int damage)
+    {
+        Health -= damage;
+        Console.WriteLine($"{Name} takes {damage} damage! Health now: {Health}");
+    }
+    
+    public void Move(float newX, float newY)
+    {
+        X = newX;
+        Y = newY;
+        Console.WriteLine($"{Name} moved to ({X}, {Y})");
+    }
+    
+    public void DisplayInfo()
+    {
+        Console.WriteLine($"Player: {Name} | Health: {Health} | Score: {Score} | Position: ({X}, {Y})");
+    }
+}
+
+// Now let's create actual Player objects (instances of the class)
+Player player1 = new Player("Alice", 100, 200);
+Player player2 = new Player("Bob", 300, 150);
+
+// Each player is separate with their own data
+player1.DisplayInfo();
+player2.DisplayInfo();
+
+Console.WriteLine("\n--- Game Events ---");
+
+// Players can perform actions independently
+player1.TakeDamage(25);
+player2.Move(400, 100);
+player1.TakeDamage(10);
+
+Console.WriteLine("\n--- Final Status ---");
+player1.DisplayInfo();
+player2.DisplayInfo();
+
+#!markdown
+
+**Notice**: We created **two separate players** from the same `Player` class. Each has their own name, health, and position. When Alice takes damage, it doesn't affect Bob!
+
+---
+
+## 4. Why Are Classes Useful in Games?
+
+### Before Classes (messy approach):
+```csharp
+// Managing multiple players without classes - gets confusing quickly!
+string player1Name = "Alice";
+int player1Health = 100;
+float player1X = 100, player1Y = 200;
+
+string player2Name = "Bob"; 
+int player2Health = 100;
+float player2X = 300, player2Y = 150;
+
+// What if we need 10 players? 50 enemies? This becomes impossible to manage!
+```
+
+### With Classes (organised approach):
+```csharp
+// Clean and organised - each player manages their own data
+Player player1 = new Player("Alice", 100, 200);
+Player player2 = new Player("Bob", 300, 150);
+
+// Easy to add more players
+Player player3 = new Player("Charlie", 500, 300);
+```
+
+---
+
+## 5. Text Game Example: Adventure Party
+
+Let's create a simple text-based adventure game using our Player class. We'll simulate a party of adventurers exploring a dungeon:
+
+#!csharp
+
+// Define possible actions for our adventure simulation
+string[] dungeonEvents = { "treasure", "trap", "monster", "rest", "treasure" };
+
+// Create a party of adventurers
+Player warrior = new Player("Warrior", 0, 0);
+Player mage = new Player("Mage", 0, 0);
+Player rogue = new Player("Rogue", 0, 0);
+
+Player[] party = { warrior, mage, rogue };
+
+Console.WriteLine("=== Dungeon Adventure ===");
+Console.WriteLine("A party of three brave adventurers enters the dungeon...\n");
+
+// Initial party status
+foreach (Player adventurer in party)
+{
+    adventurer.DisplayInfo();
+}
+
+Console.WriteLine("\n--- Adventure Events ---");
+
+// Simulate dungeon events
+for (int i = 0; i < dungeonEvents.Length; i++)
+{
+    string eventType = dungeonEvents[i];
+    Console.WriteLine($"\nEvent {i + 1}: The party encounters a {eventType}!");
+    
+    switch (eventType)
+    {
+        case "treasure":
+            foreach (Player p in party)
+            {
+                p.Score += 50;
+            }
+            Console.WriteLine("Everyone gains 50 gold!");
+            break;
+            
+        case "trap":
+            // Only the rogue takes damage (they're scouting ahead)
+            rogue.TakeDamage(15);
+            break;
+            
+        case "monster":
+            // Warrior takes damage protecting the party
+            warrior.TakeDamage(30);
+            // Party defeats monster for score
+            foreach (Player p in party)
+            {
+                p.Score += 25;
+            }
+            Console.WriteLine("Monster defeated! Everyone gains 25 gold!");
+            break;
+            
+        case "rest":
+            Console.WriteLine("The party rests and recovers some health.");
+            foreach (Player p in party)
+            {
+                p.Health += 20;
+                if (p.Health > 100) p.Health = 100; // Max health
+                Console.WriteLine($"{p.Name} restored to {p.Health} health");
+            }
+            break;
+    }
+}
+
+Console.WriteLine("\n--- Final Party Status ---");
+foreach (Player adventurer in party)
+{
+    adventurer.DisplayInfo();
+}
+
+#!markdown
+
+**Key Benefits**: Notice how each `Player` object maintains its own state. The warrior takes different damage than the rogue, but they all share the same class structure. This is the power of object-oriented programming!
+
+---
+
+## 6. Raylib Example: Visual Player Objects
+
+Now let's bring our `Player` class into Raylib and see multiple players on screen:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+// Enhanced Player class for Raylib graphics
+public class GamePlayer
+{
+    public string Name;
+    public float X, Y;
+    public int Health;
+    public Color PlayerColor;
+    public float Speed;
+    
+    public GamePlayer(string name, float x, float y, Color color)
+    {
+        Name = name;
+        X = x;
+        Y = y;
+        Health = 100;
+        PlayerColor = color;
+        Speed = 3.0f;
+    }
+    
+    public void MoveWithInput(KeyboardKey up, KeyboardKey down, KeyboardKey left, KeyboardKey right)
+    {
+        if (Raylib.IsKeyDown(up)) Y -= Speed;
+        if (Raylib.IsKeyDown(down)) Y += Speed;
+        if (Raylib.IsKeyDown(left)) X -= Speed;
+        if (Raylib.IsKeyDown(right)) X += Speed;
+        
+        // Keep player on screen
+        if (X < 20) X = 20;
+        if (X > 780) X = 780;
+        if (Y < 20) Y = 20;
+        if (Y > 580) Y = 580;
+    }
+    
+    public void Draw()
+    {
+        // Draw player as circle
+        Raylib.DrawCircle((int)X, (int)Y, 20, PlayerColor);
+        
+        // Draw name above player
+        Raylib.DrawText(Name, (int)X - 25, (int)Y - 40, 16, Color.White);
+        
+        // Draw health bar
+        int healthBarWidth = (int)(40 * (Health / 100.0f));
+        Raylib.DrawRectangle((int)X - 20, (int)Y + 25, 40, 6, Color.Red);
+        Raylib.DrawRectangle((int)X - 20, (int)Y + 25, healthBarWidth, 6, Color.Green);
+    }
+}
+
+// Create two players with different controls and colors
+GamePlayer player1 = new GamePlayer("Player 1", 200, 300, Color.Blue);
+GamePlayer player2 = new GamePlayer("Player 2", 600, 300, Color.Red);
+
+Raylib.InitWindow(800, 600, "Two Player Example with Classes");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Update players with different key controls
+    player1.MoveWithInput(KeyboardKey.W, KeyboardKey.S, KeyboardKey.A, KeyboardKey.D);
+    player2.MoveWithInput(KeyboardKey.Up, KeyboardKey.Down, KeyboardKey.Left, KeyboardKey.Right);
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkGreen);
+    
+    // Draw both players
+    player1.Draw();
+    player2.Draw();
+    
+    // Draw instructions
+    Raylib.DrawText("Player 1: WASD keys", 10, 10, 20, Color.White);
+    Raylib.DrawText("Player 2: Arrow keys", 10, 35, 20, Color.White);
+    Raylib.DrawText("Each player is a separate object!", 10, 70, 16, Color.Yellow);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Amazing!** We now have two separate player objects, each with their own position, color, and controls. Both use the same `GamePlayer` class, but they're completely independent objects.
+
+---
+
+## 7. Classes vs Objects - Quick Summary
+
+| **Class** | **Object** |
+|-----------|------------|
+| Blueprint/Template | Actual instance |
+| Defines structure | Has specific values |
+| `class Player { ... }` | `Player hero = new Player(...)` |
+| You write once | You can create many |
+| Like a cookie cutter | Like actual cookies |
+
+---
+
+## 8. Challenge: Create Your Own Classes
+
+Your turn! These challenges will test your understanding of classes and objects. Read the requirements carefully and implement each class yourself.
+
+### Challenge 1: Enemy Class 🗡️
+**Your Task**: Create an `Enemy` class that can be used in a simple text-based combat system.
+
+**Requirements:**
+- **Properties**: `Name` (string), `Health` (int), `AttackPower` (int)
+- **Constructor**: Takes name and sets health to 50, attack power to 15
+- **Methods**: 
+  - `TakeDamage(int damage)` - reduces health and shows a message
+  - `DisplayStats()` - shows name, health, and attack power
+  - `IsAlive()` - returns true if health > 0
+
+**Syntax Reminders:**
+```csharp
+// Class structure:
+public class ClassName 
+{
+    public DataType PropertyName;
+    
+    public ClassName(parameters) 
+    {
+        // Set initial values
+    }
+    
+    public void MethodName() 
+    {
+        // Method code
+    }
+}
+```
+
+#!csharp
+
+// Write your Enemy class here:
+// TODO: Create the Enemy class with all required properties, constructor, and methods
+
+
+
+// Test your Enemy class with this code (don't modify this part):
+Console.WriteLine("=== Testing Enemy Class ===");
+
+Enemy goblin = new Enemy("Goblin Warrior");
+Enemy troll = new Enemy("Cave Troll");
+
+Console.WriteLine("Initial Stats:");
+goblin.DisplayStats();
+troll.DisplayStats();
+
+Console.WriteLine("\nCombat simulation:");
+goblin.TakeDamage(20);
+troll.TakeDamage(35);
+
+Console.WriteLine($"\nGoblin alive? {goblin.IsAlive()}");
+Console.WriteLine($"Troll alive? {troll.IsAlive()}");
+
+goblin.TakeDamage(40);  // This should defeat the goblin
+Console.WriteLine($"Goblin alive after heavy damage? {goblin.IsAlive()}");
+
+#!markdown
+
+**Expected Output:**
+```
+=== Testing Enemy Class ===
+Initial Stats:
+Goblin Warrior - Health: 50, Attack Power: 15
+Cave Troll - Health: 50, Attack Power: 15
+
+Combat simulation:
+Goblin Warrior takes 20 damage! Health now: 30
+Cave Troll takes 35 damage! Health now: 15
+
+Goblin alive? True
+Troll alive? True
+Goblin Warrior takes 40 damage! Health now: -10
+Goblin alive after heavy damage? False
+```
+
+---
+
+### Challenge 2: Item Class 💎
+**Your Task**: Create an `Item` class for a treasure collection game.
+
+**Requirements:**
+- **Properties**: `Name` (string), `Value` (int), `IsCollected` (bool)
+- **Constructor**: Takes name and value, sets IsCollected to false
+- **Methods**:
+  - `Collect()` - sets IsCollected to true and returns the value (but only if not already collected)
+  - `GetDescription()` - returns a string like "Ruby (50 gold) - Collected" or "Ruby (50 gold) - Available"
+
+**Additional Challenge**: The `Collect()` method should return 0 if the item is already collected.
+
+#!csharp
+
+// Write your Item class here:
+// TODO: Create the Item class with all required properties, constructor, and methods
+
+
+
+// Test your Item class (don't modify this):
+Console.WriteLine("=== Testing Item Class ===");
+
+Item ruby = new Item("Ruby", 50);
+Item diamond = new Item("Diamond", 100);
+Item emerald = new Item("Emerald", 75);
+
+Console.WriteLine("Available items:");
+Console.WriteLine(ruby.GetDescription());
+Console.WriteLine(diamond.GetDescription());
+Console.WriteLine(emerald.GetDescription());
+
+Console.WriteLine("\nCollecting items:");
+int gold1 = ruby.Collect();
+int gold2 = diamond.Collect();
+Console.WriteLine($"Collected ruby for {gold1} gold");
+Console.WriteLine($"Collected diamond for {gold2} gold");
+
+Console.WriteLine("\nTrying to collect ruby again:");
+int gold3 = ruby.Collect();
+Console.WriteLine($"Tried to collect ruby again, got {gold3} gold");
+
+Console.WriteLine("\nFinal status:");
+Console.WriteLine(ruby.GetDescription());
+Console.WriteLine(diamond.GetDescription());
+Console.WriteLine(emerald.GetDescription());
+
+#!markdown
+
+**Expected Output:**
+```
+=== Testing Item Class ===
+Available items:
+Ruby (50 gold) - Available
+Diamond (100 gold) - Available
+Emerald (75 gold) - Available
+
+Collecting items:
+Collected ruby for 50 gold
+Collected diamond for 100 gold
+
+Trying to collect ruby again:
+Tried to collect ruby again, got 0 gold
+
+Final status:
+Ruby (50 gold) - Collected
+Diamond (100 gold) - Collected
+Emerald (75 gold) - Available
+```
+
+---
+
+### Challenge 3: Simple Visual Star ⭐
+**Your Task**: Create a `Star` class for a Raylib program that draws animated stars.
+
+**Requirements:**
+- **Properties**: `X` (float), `Y` (float), `Size` (float), `StarColor` (Color)
+- **Constructor**: Takes x, y, size, and color
+- **Methods**:
+  - `Draw()` - draws the star as a circle (use `Raylib.DrawCircle`)
+  - `Twinkle()` - changes the size randomly between the original size ± 5 pixels
+
+**Raylib Syntax Reminder:**
+```csharp
+Raylib.DrawCircle((int)x, (int)y, radius, color);
+// For random: Raylib.GetRandomValue(min, max)
+```
+
+#!csharp
+
+// Write your Star class here:
+// TODO: Create the Star class with all required properties, constructor, and methods
+
+
+
+// Test framework (don't modify this part):
+Raylib.InitWindow(800, 600, "Challenge 3: Animated Stars");
+Raylib.SetTargetFPS(60);
+
+// Create your stars here - make 3 different colored stars at different positions
+Star star1 = new Star(200, 150, 20, Color.Yellow);
+Star star2 = new Star(400, 300, 25, Color.White);
+Star star3 = new Star(600, 200, 15, Color.Gold);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Make stars twinkle occasionally
+    if (Raylib.GetRandomValue(1, 30) == 1) star1.Twinkle();
+    if (Raylib.GetRandomValue(1, 30) == 1) star2.Twinkle();
+    if (Raylib.GetRandomValue(1, 30) == 1) star3.Twinkle();
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkBlue);
+    
+    // Draw all stars
+    star1.Draw();
+    star2.Draw();
+    star3.Draw();
+    
+    Raylib.DrawText("Watch the stars twinkle!", 10, 10, 20, Color.White);
+    Raylib.DrawText("Each star is a separate object", 10, 35, 16, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Success Criteria:**
+- You should see three stars of different colors
+- Stars should occasionally change size (twinkling effect)
+- Each star maintains its own position and color
+- The program should run without errors
+
+**Hints if you get stuck:**
+- Store the original size in the constructor so you can calculate twinkle range
+- Use `Raylib.GetRandomValue(originalSize - 5, originalSize + 5)` for twinkling
+- Remember to cast float coordinates to int for `DrawCircle`: `(int)X, (int)Y`
+
+---
+
+## 9. Challenge Reflection
+
+Once you've completed all three challenges, think about:
+1. **How did creating your own classes compare to using the pre-made examples?**
+2. **Which parts were most challenging? Which were easier than expected?**
+3. **Can you see how classes help organize game code with multiple objects?**
+
+**Coming Next**: In Session 17, we'll learn how to manage dozens of these objects at once using **arrays and lists**!
+
+---
+
+## 10. What's Next?
+
+In our next session, we'll learn about **Arrays and Lists** - powerful ways to manage multiple objects at once. Instead of creating `player1`, `player2`, `player3` individually, we'll learn how to create and manage dozens or even hundreds of objects efficiently.
+
+This is essential for creating real games with multiple enemies, bullets, power-ups, and other game objects!
+
+---
+
+## Key Concepts Learned:
+- **Classes**: Blueprints that define structure and behavior
+- **Objects**: Specific instances created from classes
+- **Properties**: Data that objects store (like health, position)
+- **Methods**: Actions that objects can perform (like move, attack)
+- **Independence**: Each object maintains its own state
+- **Organisation**: Classes help structure complex game systems
+
+Great job learning object-oriented programming! This is a huge step toward creating professional games! 🎮✨

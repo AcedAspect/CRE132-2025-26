@@ -1,0 +1,143 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Methods (Functions) in C#
+
+Last, we explored conditional logic and how to use them in both text games and Raylib graphical examples. You learned how to control the flow of your program and make your games interactive. This week, we'll build on that by learning how to organize your code using methods (functions).
+
+## Learning Objectives
+- Understand what methods (functions) are and why they are useful
+- Learn how to define and call methods in C#
+- Practice writing simple methods to organize code
+- See how methods can be used in text games and Raylib projects
+
+## What is a Method?
+A method (or function) is a reusable block of code that performs a specific task. Methods help you organize your code, avoid repetition, and make your programs easier to read and maintain.
+
+#!csharp
+
+// Example: A simple method that prints a greeting
+void SayHello()
+{
+    Console.WriteLine("Hello, world!");
+}
+
+SayHello();
+
+#!markdown
+
+## Real-World Example: Calculating Player Score
+Methods are especially useful in games. For example, you might want a method to calculate a player's score based on their actions.
+
+#!csharp
+
+// Example: Method to calculate player score
+int CalculateScore(int coins, int enemiesDefeated)
+{
+    return coins * 10 + enemiesDefeated * 50;
+}
+
+int score = CalculateScore(3, 2); // 3 coins, 2 enemies
+Console.WriteLine($"Player score: {score}");
+
+#!markdown
+
+## Methods with Parameters
+Methods can take parameters (inputs) to make them more flexible.
+
+#!csharp
+
+// Example: Method with a parameter
+void Greet(string name)
+{
+    Console.WriteLine($"Hello, {name}!");
+}
+
+Greet("Alice");
+Greet("Bob");
+
+#!markdown
+
+## Methods in a Text Game
+Let's use a method to check if a player's guess is correct in a simple guessing game.
+
+#!csharp
+
+// Example: Method for a text game
+bool IsCorrectGuess(int guess, int secret)
+{
+    return guess == secret;
+}
+
+int secretNumber = 7;
+int playerGuess = 5;
+if (IsCorrectGuess(playerGuess, secretNumber))
+{
+    Console.WriteLine("You guessed it!");
+}
+else
+{
+    Console.WriteLine("Try again!");
+}
+
+#!markdown
+
+## Methods that Return Values
+Methods can also return values using the `return` keyword.
+
+#!csharp
+
+// Example: Method that returns a value
+int Add(int a, int b)
+{
+    return a + b;
+}
+
+int sum = Add(3, 5);
+Console.WriteLine($"3 + 5 = {sum}");
+
+#!markdown
+
+## Methods in Raylib
+You can use methods to organize your Raylib code, too! For example, you might want a method to draw a custom shape.
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+static void DrawPlayer(float x, float y, Color color)
+{
+    Raylib.DrawCircle((int)x, (int)y, 30, color);
+    Raylib.DrawText("Player", (int)x - 30, (int)y + 40, 20, color);
+}
+
+Raylib.InitWindow(400, 300, "Raylib Method Example");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.White);
+    DrawPlayer(200, 150, Color.Blue);
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+## Challenge
+1. Write a method called `Multiply` that takes two integers as parameters and returns their product. Call your method with different values and print the results.
+2. (Harder) Write a method called `Max` that takes two integers and returns the larger one. Use it to print the maximum of two numbers.
+3. (Raylib) Write a method that draws a rectangle at a given position and size, and call it from inside the Raylib game loop.
+
+#!csharp
+
+// Your code here 

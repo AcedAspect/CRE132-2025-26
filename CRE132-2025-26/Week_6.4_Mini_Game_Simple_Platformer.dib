@@ -1,0 +1,1676 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Mini-Game - Simple Platformer
+## The Grand Finale: Complete Game Integration
+
+Congratulations! You've reached the final session of Week 5, where we bring together **everything** you've learned about professional game development:
+
+### **Today's Challenge:**
+Create a **complete, playable Simple Platformer** that demonstrates all these systems working together harmoniously. This isn't just a code example - it's a real game that showcases professional game development architecture!
+
+### **Game Features We'll Implement:**
+- **Complete State System**: Menu → Gameplay → Pause → Game Over → Back to Menu
+- **Character Controller**: Smooth movement, jumping, and animated sprites
+- **Level Design**: Platforms, obstacles, and collectible coins
+- **Audio Experience**: Background music, jump sounds, coin collection effects
+- **Professional UI**: Score display, health system, pause menu, game over screen
+- **Visual Polish**: Custom fonts, animations, particle effects, and smooth transitions
+
+---
+
+## 2. Game Architecture Overview
+
+Before diving into code, let's understand how professional games are structured:
+
+```
+SIMPLE PLATFORMER ARCHITECTURE
+
+┌─────────────────────────────────────────────────────────────┐
+│                    GAME STATE MANAGER                      │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   MENU STATE    │  GAMEPLAY STATE │    GAME OVER STATE      │
+│                 │                 │                         │
+│ • Title Screen  │ • Player        │ • Final Score           │
+│ • Start Button  │ • Platforms     │ • Restart Button        │
+│ • Exit Button   │ • Coins         │ • Menu Button           │
+│ • Settings      │ • Physics       │ • High Score            │
+└─────────────────┴─────────────────┴─────────────────────────┘
+         │                 │                         │
+         └─────────────────┼─────────────────────────┘
+                           │
+┌─────────────────────────────────────────────────────────────┐
+│                     CORE SYSTEMS                           │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│  ANIMATION SYS  │   AUDIO SYSTEM  │     UI SYSTEM           │
+│                 │                 │                         │
+│ • Player Anims  │ • Music Manager │ • Score Display         │
+│ • Coin Spinning │ • SFX Manager   │ • Health Bar            │
+│ • Particle FX   │ • Volume Ctrl   │ • Custom Fonts          │
+│ • Transitions   │ • Audio Pools   │ • Button States         │
+└─────────────────┴─────────────────┴─────────────────────────┘
+```
+
+This architecture allows each system to work independently while contributing to the complete game experience.
+
+---
+
+## 3. Text-Based Game Prototype
+
+Let's start by creating a text-based version that demonstrates the core game logic and state management:
+
+#!csharp
+
+using System;
+using System.Collections.Generic;
+
+// Game state enumeration
+public enum GameState
+{
+    Menu,
+    Playing,
+    Paused,
+    GameOver
+}
+
+// Simple platformer game logic (text-based)
+public class TextPlatformerGame
+{
+    public GameState CurrentState { get; set; }
+    public int PlayerX { get; set; }
+    public int PlayerY { get; set; }
+    public int PlayerHealth { get; set; }
+    public int Score { get; set; }
+    public int CoinsCollected { get; set; }
+    public int Level { get; set; }
+    public bool IsJumping { get; set; }
+    public List<(int x, int y)> Coins { get; set; }
+    public List<(int x, int y, int width)> Platforms { get; set; }
+    
+    public TextPlatformerGame()
+    {
+        CurrentState = GameState.Menu;
+        Reset();
+    }
+    
+    public void Reset()
+    {
+        PlayerX = 1;
+        PlayerY = 5;
+        PlayerHealth = 3;
+        Score = 0;
+        CoinsCollected = 0;
+        Level = 1;
+        IsJumping = false;
+        
+        // Initialize level layout
+        Coins = new List<(int, int)> 
+        { 
+            (3, 3), (7, 2), (12, 4), (15, 1), (20, 3) 
+        };
+        
+        Platforms = new List<(int, int, int)>
+        {
+            (0, 6, 25),   // Ground platform
+            (5, 4, 4),    // Platform 1
+            (10, 3, 5),   // Platform 2
+            (16, 2, 4),   // Platform 3
+            (22, 5, 3)    // Platform 4
+        };
+    }
+    
+    public void ProcessMenuInput(string input)
+    {
+        switch (input.ToLower())
+        {
+            case "start":
+                CurrentState = GameState.Playing;
+                Console.WriteLine("🎮 Game Started! Use 'left', 'right', 'jump' to move. 'pause' to pause.");
+                break;
+            case "quit":
+                Console.WriteLine("👋 Thanks for playing!");
+                Environment.Exit(0);
+                break;
+            default:
+                Console.WriteLine("❓ Invalid option. Type 'start' or 'quit'");
+                break;
+        }
+    }
+    
+    public void ProcessGameplayInput(string input)
+    {
+        switch (input.ToLower())
+        {
+            case "left":
+                if (PlayerX > 0) PlayerX--;
+                CheckCollisions();
+                break;
+            case "right":
+                if (PlayerX < 24) PlayerX++;
+                CheckCollisions();
+                break;
+            case "jump":
+                if (!IsJumping)
+                {
+                    IsJumping = true;
+                    PlayerY -= 2; // Jump up
+                    Console.WriteLine("🦘 *Jump*");
+                }
+                break;
+            case "pause":
+                CurrentState = GameState.Paused;
+                Console.WriteLine("⏸️ Game Paused. Type 'resume' to continue or 'menu' to return to menu.");
+                break;
+            default:
+                Console.WriteLine("❓ Use 'left', 'right', 'jump', or 'pause'");
+                break;
+        }
+        
+        // Apply gravity
+        if (IsJumping)
+        {
+            PlayerY++; // Fall down
+            if (IsOnPlatform())
+            {
+                IsJumping = false;
+                Console.WriteLine("🦶 *Landed*");
+            }
+        }
+    }
+    
+    public void ProcessPauseInput(string input)
+    {
+        switch (input.ToLower())
+        {
+            case "resume":
+                CurrentState = GameState.Playing;
+                Console.WriteLine("▶️ Game Resumed!");
+                break;
+            case "menu":
+                CurrentState = GameState.Menu;
+                Console.WriteLine("🏠 Returned to Menu");
+                break;
+            default:
+                Console.WriteLine("❓ Type 'resume' or 'menu'");
+                break;
+        }
+    }
+    
+    public void ProcessGameOverInput(string input)
+    {
+        switch (input.ToLower())
+        {
+            case "restart":
+                Reset();
+                CurrentState = GameState.Playing;
+                Console.WriteLine("🔄 Game Restarted!");
+                break;
+            case "menu":
+                Reset();
+                CurrentState = GameState.Menu;
+                Console.WriteLine("🏠 Returned to Menu");
+                break;
+            default:
+                Console.WriteLine("❓ Type 'restart' or 'menu'");
+                break;
+        }
+    }
+    
+    private bool IsOnPlatform()
+    {
+        foreach (var platform in Platforms)
+        {
+            if (PlayerX >= platform.x && PlayerX < platform.x + platform.width && PlayerY == platform.y - 1)
+            {
+                PlayerY = platform.y - 1; // Snap to platform
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private void CheckCollisions()
+    {
+        // Check coin collection
+        for (int i = Coins.Count - 1; i >= 0; i--)
+        {
+            if (Coins[i].x == PlayerX && Coins[i].y == PlayerY)
+            {
+                Coins.RemoveAt(i);
+                CoinsCollected++;
+                Score += 100;
+                Console.WriteLine($"💰 Coin collected! Score: {Score}");
+                
+                if (Coins.Count == 0)
+                {
+                    Console.WriteLine("🎉 Level Complete! All coins collected!");
+                    CurrentState = GameState.GameOver;
+                }
+            }
+        }
+        
+        // Check if player fell off the world
+        if (PlayerY > 8)
+        {
+            PlayerHealth--;
+            Console.WriteLine($"💔 Fell off the world! Health: {PlayerHealth}");
+            PlayerX = 1;
+            PlayerY = 5;
+            
+            if (PlayerHealth <= 0)
+            {
+                Console.WriteLine("💀 Game Over! All health lost!");
+                CurrentState = GameState.GameOver;
+            }
+        }
+    }
+    
+    public void DisplayGame()
+    {
+        Console.Clear();
+        
+        switch (CurrentState)
+        {
+            case GameState.Menu:
+                DisplayMenu();
+                break;
+            case GameState.Playing:
+                DisplayGameplay();
+                break;
+            case GameState.Paused:
+                DisplayPaused();
+                break;
+            case GameState.GameOver:
+                DisplayGameOver();
+                break;
+        }
+    }
+    
+    private void DisplayMenu()
+    {
+        Console.WriteLine("╔══════════════════════════════════════╗");
+        Console.WriteLine("║          SIMPLE PLATFORMER          ║");
+        Console.WriteLine("║              Main Menu               ║");
+        Console.WriteLine("╠══════════════════════════════════════╣");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("║  🎮 Type 'start' to begin playing   ║");
+        Console.WriteLine("║  🚪 Type 'quit' to exit game        ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("║  Goal: Collect all coins to win!    ║");
+        Console.WriteLine("║  Controls: left, right, jump         ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("╚══════════════════════════════════════╝");
+    }
+    
+    private void DisplayGameplay()
+    {
+        Console.WriteLine($"❤️ Health: {PlayerHealth} | 💰 Score: {Score} | 🪙 Coins: {CoinsCollected}/5 | Level: {Level}");
+        Console.WriteLine("".PadRight(50, '='));
+        
+        // Draw simple level representation
+        for (int y = 0; y < 8; y++)
+        {
+            string line = "";
+            for (int x = 0; x < 25; x++)
+            {
+                bool hasContent = false;
+                
+                // Draw player
+                if (x == PlayerX && y == PlayerY)
+                {
+                    line += "😊";
+                    hasContent = true;
+                }
+                // Draw coins
+                else if (Coins.Any(coin => coin.x == x && coin.y == y))
+                {
+                    line += "💰";
+                    hasContent = true;
+                }
+                // Draw platforms
+                else if (Platforms.Any(platform => x >= platform.x && x < platform.x + platform.width && y == platform.y))
+                {
+                    line += "█";
+                    hasContent = true;
+                }
+                
+                if (!hasContent)
+                {
+                    line += " ";
+                }
+            }
+            Console.WriteLine(line);
+        }
+        
+        Console.WriteLine("".PadRight(50, '='));
+        Console.WriteLine("Controls: 'left', 'right', 'jump', 'pause'");
+    }
+    
+    private void DisplayPaused()
+    {
+        Console.WriteLine("╔══════════════════════════════════════╗");
+        Console.WriteLine("║              GAME PAUSED             ║");
+        Console.WriteLine("╠══════════════════════════════════════╣");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("║  ▶️ Type 'resume' to continue        ║");
+        Console.WriteLine("║  🏠 Type 'menu' to return to menu   ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine($"║  Current Score: {Score,-16}        ║");
+        Console.WriteLine($"║  Coins Collected: {CoinsCollected}/5{"",-11}        ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("╚══════════════════════════════════════╝");
+    }
+    
+    private void DisplayGameOver()
+    {
+        string result = Coins.Count == 0 ? "VICTORY!" : "GAME OVER";
+        string message = Coins.Count == 0 ? "All coins collected!" : "Better luck next time!";
+        
+        Console.WriteLine("╔══════════════════════════════════════╗");
+        Console.WriteLine($"║              {result,-15}        ║");
+        Console.WriteLine("╠══════════════════════════════════════╣");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine($"║  {message,-29}        ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine($"║  Final Score: {Score,-18}        ║");
+        Console.WriteLine($"║  Coins Collected: {CoinsCollected}/5{"",-11}        ║");
+        Console.WriteLine($"║  Health Remaining: {PlayerHealth,-13}        ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("║  🔄 Type 'restart' to play again    ║");
+        Console.WriteLine("║  🏠 Type 'menu' to return to menu   ║");
+        Console.WriteLine("║                                      ║");
+        Console.WriteLine("╚══════════════════════════════════════╝");
+    }
+}
+
+// Game simulation
+Console.WriteLine("=== TEXT PLATFORMER GAME SIMULATION ===\n");
+
+TextPlatformerGame game = new TextPlatformerGame();
+
+// Simulate a game session
+string[] gameSession = {
+    // Menu phase
+    "start",
+    
+    // Gameplay phase - collect some coins
+    "right", "right", "jump", "right",  // Get first coin
+    "right", "right", "right", "jump", "jump", "right",  // Move toward second coin
+    "right", "right", "right", "right", "jump", "right",  // Get more coins
+    "pause",  // Test pause functionality
+    
+    // Pause phase
+    "resume",
+    
+    // Continue gameplay
+    "right", "right", "right", "jump", "right",  // Try to get remaining coins
+    "left", "left", "left", "left", "left",  // Move back
+    "jump", "right", "right",  // Get final coins
+    
+    // Game will end when all coins collected or health runs out
+};
+
+game.DisplayGame();
+
+foreach (string input in gameSession)
+{
+    Console.WriteLine($"\n>>> Player input: {input}");
+    
+    switch (game.CurrentState)
+    {
+        case GameState.Menu:
+            game.ProcessMenuInput(input);
+            break;
+        case GameState.Playing:
+            game.ProcessGameplayInput(input);
+            break;
+        case GameState.Paused:
+            game.ProcessPauseInput(input);
+            break;
+        case GameState.GameOver:
+            game.ProcessGameOverInput(input);
+            break;
+    }
+    
+    game.DisplayGame();
+    
+    // Stop simulation if game ends
+    if (game.CurrentState == GameState.GameOver && input == "restart")
+        break;
+        
+    System.Threading.Thread.Sleep(1000); // Pause for readability
+}
+
+Console.WriteLine("\n🎯 Text-based prototype complete! This demonstrates the core game logic we'll implement in Raylib.");
+
+#!markdown
+
+**Text Game Demonstration Highlights:**
+- **Complete State Management**: Menu → Playing → Paused → Game Over flow
+- **Core Gameplay**: Movement, jumping, coin collection, health system
+- **Professional Structure**: Clean separation of input handling, game logic, and display
+- **Win/Lose Conditions**: Collect all coins to win, lose all health to fail
+- **User Experience**: Clear feedback, intuitive controls, consistent interface
+
+This text version proves our game logic works correctly before we add graphics, audio, and animations!
+
+---
+
+## 4. Complete Raylib Platformer Implementation
+
+Now let's create the full visual game that integrates all our Week 5 systems:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+using System;
+using System.Collections.Generic;
+
+// Complete Simple Platformer with all Week 5 systems integrated
+Raylib.InitWindow(1000, 700, "Simple Platformer - Week 5 Integration Demo");
+Raylib.SetTargetFPS(60);
+
+// === GAME STATE SYSTEM (Session 25) ===
+public enum GameState
+{
+    Menu,
+    Playing,
+    Paused,
+    GameOver
+}
+
+GameState currentState = GameState.Menu;
+
+// === AUDIO SYSTEM (Session 28) ===
+bool audioInitialized = false;
+try
+{
+    Raylib.InitAudioDevice();
+    audioInitialized = true;
+    Console.WriteLine("✅ Audio system initialized");
+}
+catch
+{
+    Console.WriteLine("❌ Audio system failed to initialize");
+}
+
+// === FONT SYSTEM (Session 29) ===
+Font gameFont = new Font();
+Font titleFont = new Font();
+bool customFontsLoaded = false;
+
+try
+{
+    gameFont = Raylib.LoadFont("resources/fonts/pixelplay.png");
+    titleFont = Raylib.LoadFont("resources/fonts/alagard.png");
+    if (gameFont.BaseSize > 0 && titleFont.BaseSize > 0)
+    {
+        customFontsLoaded = true;
+        Console.WriteLine("✅ Custom fonts loaded successfully");
+    }
+}
+catch
+{
+    Console.WriteLine("❌ Custom fonts not found, using default font");
+}
+
+// === ANIMATION SYSTEM (Session 27) ===
+public class AnimationController
+{
+    public int CurrentFrame { get; set; }
+    public float Timer { get; set; }
+    public float FrameSpeed { get; set; }
+    public int FrameCount { get; set; }
+    public bool IsPlaying { get; set; }
+    
+    public AnimationController(int frameCount, float frameSpeed)
+    {
+        FrameCount = frameCount;
+        FrameSpeed = frameSpeed;
+        CurrentFrame = 0;
+        Timer = 0;
+        IsPlaying = true;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (!IsPlaying) return;
+        
+        Timer += deltaTime;
+        if (Timer >= FrameSpeed)
+        {
+            CurrentFrame = (CurrentFrame + 1) % FrameCount;
+            Timer = 0;
+        }
+    }
+}
+
+// === GAME ENTITIES ===
+public class Player
+{
+    public Vector2 Position { get; set; }
+    public Vector2 Velocity { get; set; }
+    public bool IsOnGround { get; set; }
+    public bool IsMoving { get; set; }
+    public bool FacingRight { get; set; }
+    public AnimationController IdleAnimation { get; set; }
+    public AnimationController WalkAnimation { get; set; }
+    public int Health { get; set; }
+    public float Width => 32;
+    public float Height => 32;
+    
+    // Jump improvement variables
+    public float JumpBufferTime { get; set; }      // How long to remember jump input
+    public float CoyoteTime { get; set; }          // How long after leaving ground can still jump
+    public bool WasOnGroundLastFrame { get; set; } // Track ground state
+    
+    public Player(float x, float y)
+    {
+        Position = new Vector2(x, y);
+        Velocity = Vector2.Zero;
+        IsOnGround = false;
+        IsMoving = false;
+        FacingRight = true;
+        Health = 3;
+        IdleAnimation = new AnimationController(1, 1.0f);
+        WalkAnimation = new AnimationController(4, 0.15f);
+        
+        // Initialize jump improvements
+        JumpBufferTime = 0f;
+        CoyoteTime = 0f;
+        WasOnGroundLastFrame = false;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (IsMoving)
+            WalkAnimation.Update(deltaTime);
+        else
+            IdleAnimation.Update(deltaTime);
+    }
+    
+    public void Draw()
+    {
+        Color playerColor = Health > 1 ? Color.Blue : (Health == 1 ? Color.Orange : Color.Red);
+        
+        // Simple character representation
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)Width, (int)Height, playerColor);
+        
+        // Eyes
+        Color eyeColor = Color.White;
+        int eyeSize = 6;
+        int eyeOffsetX = FacingRight ? 8 : 18;
+        Raylib.DrawCircle((int)Position.X + eyeOffsetX, (int)Position.Y + 8, eyeSize, eyeColor);
+        Raylib.DrawCircle((int)Position.X + eyeOffsetX, (int)Position.Y + 8, 3, Color.Black);
+        
+        // Movement animation effect
+        if (IsMoving)
+        {
+            float bounce = (float)Math.Sin(WalkAnimation.Timer * 10) * 2;
+            Raylib.DrawCircle((int)(Position.X + 16), (int)(Position.Y + Height + 5 + bounce), 3, Color.Gray);
+        }
+    }
+}
+
+public class Platform
+{
+    public Vector2 Position { get; set; }
+    public float Width { get; set; }
+    public float Height { get; set; }
+    
+    public Platform(float x, float y, float width, float height = 20)
+    {
+        Position = new Vector2(x, y);
+        Width = width;
+        Height = height;
+    }
+    
+    public void Draw()
+    {
+        // Platform with simple texture pattern
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)Width, (int)Height, Color.Brown);
+        Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, (int)Width, (int)Height, Color.DarkBrown);
+        
+        // Simple brick pattern
+        for (int x = 0; x < Width; x += 40)
+        {
+            Raylib.DrawLine((int)Position.X + x, (int)Position.Y, (int)Position.X + x, (int)Position.Y + (int)Height, Color.DarkBrown);
+        }
+    }
+}
+
+public class Coin
+{
+    public Vector2 Position { get; set; }
+    public bool IsCollected { get; set; }
+    public AnimationController SpinAnimation { get; set; }
+    public float BobOffset { get; set; }
+    
+    public Coin(float x, float y)
+    {
+        Position = new Vector2(x, y);
+        IsCollected = false;
+        SpinAnimation = new AnimationController(8, 0.1f);
+        BobOffset = 0;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (!IsCollected)
+        {
+            SpinAnimation.Update(deltaTime);
+            BobOffset += deltaTime * 3;
+        }
+    }
+    
+    public void Draw(bool fontsLoaded, Font font)
+    {
+        if (IsCollected) return;
+        
+        float bobY = Position.Y + (float)Math.Sin(BobOffset) * 3;
+        Color coinColor = new Color(255, 215, 0, 255); // Gold
+        
+        // Animated coin with spinning effect
+        int spinFrame = SpinAnimation.CurrentFrame;
+        float scaleX = (float)Math.Cos(spinFrame * Math.PI / 4) * 0.8f + 0.2f;
+        
+        Raylib.DrawEllipse((int)Position.X + 10, (int)bobY + 10, (int)(15 * scaleX), 15, coinColor);
+        Raylib.DrawEllipseLines((int)Position.X + 10, (int)bobY + 10, (int)(15 * scaleX), 15, Color.Orange);
+        
+        // Coin symbol
+        if (fontsLoaded)
+        {
+            Raylib.DrawTextEx(font, "$", new Vector2(Position.X + 6, bobY + 4), 16, 1, Color.DarkGreen);
+        }
+        else
+        {
+            Raylib.DrawText("$", (int)Position.X + 6, (int)bobY + 4, 16, Color.DarkGreen);
+        }
+    }
+}
+
+// === BUTTON SYSTEM (Session 26) ===
+public class Button
+{
+    public Vector2 Position { get; set; }
+    public Vector2 Size { get; set; }
+    public string Text { get; set; }
+    public Color NormalColor { get; set; }
+    public Color HoverColor { get; set; }
+    public Color PressedColor { get; set; }
+    public bool IsHovered { get; set; }
+    public bool IsPressed { get; set; }
+    
+    public Button(float x, float y, float width, float height, string text)
+    {
+        Position = new Vector2(x, y);
+        Size = new Vector2(width, height);
+        Text = text;
+        NormalColor = new Color(70, 70, 90, 255);
+        HoverColor = new Color(90, 90, 110, 255);
+        PressedColor = new Color(50, 50, 70, 255);
+        IsHovered = false;
+        IsPressed = false;
+    }
+    
+    public bool Update()
+    {
+        Vector2 mousePos = Raylib.GetMousePosition();
+        bool mouseInBounds = mousePos.X >= Position.X && mousePos.X <= Position.X + Size.X &&
+                            mousePos.Y >= Position.Y && mousePos.Y <= Position.Y + Size.Y;
+        
+        IsHovered = mouseInBounds;
+        IsPressed = mouseInBounds && Raylib.IsMouseButtonDown(MouseButton.Left);
+        
+        return mouseInBounds && Raylib.IsMouseButtonPressed(MouseButton.Left);
+    }
+    
+    public void Draw(bool fontsLoaded, Font font)
+    {
+        Color currentColor = IsPressed ? PressedColor : (IsHovered ? HoverColor : NormalColor);
+        
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, (int)Size.X, (int)Size.Y, currentColor);
+        Raylib.DrawRectangleLines((int)Position.X, (int)Position.Y, (int)Size.X, (int)Size.Y, Color.White);
+        
+        // Center text
+        int textWidth = fontsLoaded ? 
+            (int)Raylib.MeasureTextEx(font, Text, 20, 1).X : 
+            Raylib.MeasureText(Text, 20);
+        int textX = (int)(Position.X + (Size.X - textWidth) / 2);
+        int textY = (int)(Position.Y + (Size.Y - 20) / 2);
+        
+        if (fontsLoaded)
+        {
+            Raylib.DrawTextEx(font, Text, new Vector2(textX, textY), 20, 1, Color.White);
+        }
+        else
+        {
+            Raylib.DrawText(Text, textX, textY, 20, Color.White);
+        }
+    }
+}
+
+// === GAME VARIABLES ===
+Player player = new Player(100, 500);
+List<Platform> platforms = new List<Platform>();
+List<Coin> coins = new List<Coin>();
+List<Button> menuButtons = new List<Button>();
+List<Button> pauseButtons = new List<Button>();
+List<Button> gameOverButtons = new List<Button>();
+
+int score = 0;
+int coinsCollected = 0;
+float gameTime = 0;
+bool showingPauseMenu = false;
+
+// Physics constants
+const float GRAVITY = 800.0f;
+const float JUMP_FORCE = -500.0f;  // Increased from -400 for better reach
+const float MOVE_SPEED = 200.0f;
+
+// === LEVEL SETUP ===
+void InitializeLevel()
+{
+    // Clear existing entities
+    platforms.Clear();
+    coins.Clear();
+    
+    // Create platforms
+    platforms.Add(new Platform(0, 650, 1000, 50));      // Ground
+    platforms.Add(new Platform(200, 570, 150, 20));     // Platform 1 (more reachable), 150, 20));     // Platform 1
+    platforms.Add(new Platform(400, 450, 120, 20));     // Platform 2
+    platforms.Add(new Platform(600, 350, 100, 20));     // Platform 3
+    platforms.Add(new Platform(150, 350, 100, 20));     // Platform 4
+    platforms.Add(new Platform(750, 250, 150, 20));     // Platform 5
+    
+    // Create coins (adjusted to match platform positions)
+    coins.Add(new Coin(250, 530));  // On platform 1 (adjusted for Y=570)
+    coins.Add(new Coin(430, 430));  // On platform 2  
+    coins.Add(new Coin(630, 330));  // On platform 3
+    coins.Add(new Coin(180, 330));  // On platform 4
+    coins.Add(new Coin(800, 230));  // On platform 5
+    coins.Add(new Coin(500, 600));  // On ground
+    
+    // Reset player
+    player = new Player(50, 500);
+    score = 0;
+    coinsCollected = 0;
+    gameTime = 0;
+}
+
+// === BUTTON SETUP ===
+void InitializeButtons()
+{
+    // Menu buttons
+    menuButtons.Clear();
+    menuButtons.Add(new Button(400, 300, 200, 50, "Start Game"));
+    menuButtons.Add(new Button(400, 370, 200, 50, "Exit"));
+    
+    // Pause buttons
+    pauseButtons.Clear();
+    pauseButtons.Add(new Button(400, 300, 200, 50, "Resume"));
+    pauseButtons.Add(new Button(400, 370, 200, 50, "Main Menu"));
+    
+    // Game over buttons
+    gameOverButtons.Clear();
+    gameOverButtons.Add(new Button(350, 400, 150, 50, "Play Again"));
+    gameOverButtons.Add(new Button(520, 400, 150, 50, "Main Menu"));
+}
+
+// === PHYSICS SYSTEM ===
+bool CheckCollisionWithPlatforms(Vector2 position, Vector2 size)
+{
+    foreach (Platform platform in platforms)
+    {
+        if (position.X < platform.Position.X + platform.Width &&
+            position.X + size.X > platform.Position.X &&
+            position.Y < platform.Position.Y + platform.Height &&
+            position.Y + size.Y > platform.Position.Y)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void UpdatePlayerPhysics(float deltaTime)
+{
+    // Handle input
+    player.IsMoving = false;
+    
+    if (Raylib.IsKeyDown(KeyboardKey.Left) || Raylib.IsKeyDown(KeyboardKey.A))
+    {
+        player.Velocity = new Vector2(-MOVE_SPEED, player.Velocity.Y);
+        player.FacingRight = false;
+        player.IsMoving = true;
+    }
+    else if (Raylib.IsKeyDown(KeyboardKey.Right) || Raylib.IsKeyDown(KeyboardKey.D))
+    {
+        player.Velocity = new Vector2(MOVE_SPEED, player.Velocity.Y);
+        player.FacingRight = true;
+        player.IsMoving = true;
+    }
+    else
+    {
+        player.Velocity = new Vector2(0, player.Velocity.Y);
+    }
+    
+    // === IMPROVED JUMPING SYSTEM ===
+    
+    // Update timers
+    if (player.JumpBufferTime > 0)
+        player.JumpBufferTime -= deltaTime;
+    
+    if (player.CoyoteTime > 0)
+        player.CoyoteTime -= deltaTime;
+    
+    // Check for jump input (multiple keys for better accessibility)
+    bool jumpPressed = Raylib.IsKeyPressed(KeyboardKey.Space) || 
+                      Raylib.IsKeyPressed(KeyboardKey.Up) || 
+                      Raylib.IsKeyPressed(KeyboardKey.W) ||
+                      Raylib.IsKeyDown(KeyboardKey.Space);  // Also allow holding space
+    
+    // Jump buffering: Remember jump input for 0.1 seconds
+    if (jumpPressed)
+    {
+        player.JumpBufferTime = 0.1f; // Buffer for 6 frames at 60fps
+    }
+    
+    // Coyote time: Allow jumping briefly after leaving ground
+    if (player.WasOnGroundLastFrame && !player.IsOnGround)
+    {
+        player.CoyoteTime = 0.1f; // Can jump for 6 frames after leaving ground
+    }
+    
+    // Execute jump if conditions are met
+    bool canJump = (player.IsOnGround || player.CoyoteTime > 0) && player.JumpBufferTime > 0;
+    
+    if (canJump)
+    {
+        player.Velocity = new Vector2(player.Velocity.X, JUMP_FORCE);
+        player.IsOnGround = false;
+        player.JumpBufferTime = 0f; // Consume the jump buffer
+        player.CoyoteTime = 0f;     // Consume coyote time
+    }
+    
+    // Apply gravity
+    if (!player.IsOnGround)
+    {
+        player.Velocity = new Vector2(player.Velocity.X, player.Velocity.Y + GRAVITY * deltaTime);
+    }
+    
+    // Update position
+    Vector2 newPosition = new Vector2(
+        player.Position.X + player.Velocity.X * deltaTime,
+        player.Position.Y + player.Velocity.Y * deltaTime
+    );
+    
+    // Collision detection and response
+    player.IsOnGround = false;
+    
+    // Check platform collisions
+    foreach (Platform platform in platforms)
+    {
+        // Check if player is landing on top of platform
+        if (newPosition.X < platform.Position.X + platform.Width &&
+            newPosition.X + player.Width > platform.Position.X &&
+            newPosition.Y + player.Height > platform.Position.Y &&
+            player.Position.Y + player.Height <= platform.Position.Y &&
+            player.Velocity.Y >= 0)
+        {
+            newPosition = new Vector2(newPosition.X, platform.Position.Y - player.Height);
+            player.Velocity = new Vector2(player.Velocity.X, 0);
+            player.IsOnGround = true;
+        }
+    }
+    
+    // Screen boundaries
+    newPosition = new Vector2(
+        Math.Max(0, Math.Min(newPosition.X, 1000 - player.Width)),
+        newPosition.Y
+    );
+    
+    player.Position = newPosition;
+    
+    // Check if player fell off screen
+    if (player.Position.Y > 700)
+    {
+        player.Health--;
+        player.Position = new Vector2(50, 500);
+        player.Velocity = Vector2.Zero;
+        
+        if (player.Health <= 0)
+        {
+            currentState = GameState.GameOver;
+        }
+    }
+    
+    // Update ground state tracking for coyote time
+    player.WasOnGroundLastFrame = player.IsOnGround;
+}
+
+// === COIN COLLECTION ===
+void CheckCoinCollections()
+{
+    for (int i = 0; i < coins.Count; i++)
+    {
+        if (!coins[i].IsCollected)
+        {
+            float distance = Vector2.Distance(player.Position + new Vector2(16, 16), coins[i].Position + new Vector2(10, 10));
+            if (distance < 25)
+            {
+                coins[i].IsCollected = true;
+                coinsCollected++;
+                score += 100;
+                
+                // Check win condition
+                if (coinsCollected >= coins.Count)
+                {
+                    score += 500; // Bonus for collecting all coins
+                    currentState = GameState.GameOver;
+                }
+            }
+        }
+    }
+}
+
+// === UI DRAWING FUNCTIONS ===
+void DrawHUD()
+{
+    // Background panel
+    Raylib.DrawRectangle(10, 10, 300, 80, new Color(0, 0, 0, 150));
+    Raylib.DrawRectangleLines(10, 10, 300, 80, Color.White);
+    
+    // Health display
+    for (int i = 0; i < 3; i++)
+    {
+        Color heartColor = i < player.Health ? Color.Red : Color.Gray;
+        Raylib.DrawText("♥", 20 + i * 25, 20, 20, heartColor);
+    }
+    
+    // Score and coin display
+    string scoreText = $"Score: {score}";
+    string coinText = $"Coins: {coinsCollected}/{coins.Count}";
+    
+    if (customFontsLoaded)
+    {
+        Raylib.DrawTextEx(gameFont, scoreText, new Vector2(20, 45), 16, 1, Color.White);
+        Raylib.DrawTextEx(gameFont, coinText, new Vector2(20, 65), 16, 1, Color.Yellow);
+    }
+    else
+    {
+        Raylib.DrawText(scoreText, 20, 45, 16, Color.White);
+        Raylib.DrawText(coinText, 20, 65, 16, Color.Yellow);
+    }
+    
+    // Game time
+    string timeText = $"Time: {gameTime:F1}s";
+    if (customFontsLoaded)
+    {
+        Raylib.DrawTextEx(gameFont, timeText, new Vector2(200, 20), 16, 1, Color.LightGray);
+    }
+    else
+    {
+        Raylib.DrawText(timeText, 200, 20, 16, Color.LightGray);
+    }
+}
+
+void DrawMenu()
+{
+    Raylib.ClearBackground(new Color(20, 30, 50, 255));
+    
+    // Title
+    string title = "SIMPLE PLATFORMER";
+    int titleSize = customFontsLoaded ? 48 : 40;
+    Font currentTitleFont = customFontsLoaded ? titleFont : Raylib.GetFontDefault();
+    
+    Vector2 titleMeasure = customFontsLoaded ? 
+        Raylib.MeasureTextEx(currentTitleFont, title, titleSize, 2) :
+        new Vector2(Raylib.MeasureText(title, titleSize), titleSize);
+    
+    Vector2 titlePos = new Vector2((1000 - titleMeasure.X) / 2, 150);
+    
+    if (customFontsLoaded)
+    {
+        Raylib.DrawTextEx(currentTitleFont, title, titlePos, titleSize, 2, Color.Gold);
+    }
+    else
+    {
+        Raylib.DrawText(title, (int)titlePos.X, (int)titlePos.Y, titleSize, Color.Gold);
+    }
+    
+    // Subtitle
+    string subtitle = "Week 5 Integration Demo";
+    Vector2 subtitleMeasure = customFontsLoaded ?
+        Raylib.MeasureTextEx(gameFont, subtitle, 20, 1) :
+        new Vector2(Raylib.MeasureText(subtitle, 20), 20);
+    
+    Vector2 subtitlePos = new Vector2((1000 - subtitleMeasure.X) / 2, 220);
+    
+    if (customFontsLoaded)
+    {
+        Raylib.DrawTextEx(gameFont, subtitle, subtitlePos, 20, 1, Color.LightGray);
+    }
+    else
+    {
+        Raylib.DrawText(subtitle, (int)subtitlePos.X, (int)subtitlePos.Y, 20, Color.LightGray);
+    }
+    
+    // Instructions
+    string[] instructions = {
+        "Use ARROW KEYS or WASD to move",
+        "SPACE to jump",
+        "Collect all coins to win!",
+        "ESC to pause during gameplay"
+    };
+    
+    for (int i = 0; i < instructions.Length; i++)
+    {
+        Vector2 instructionMeasure = customFontsLoaded ?
+            Raylib.MeasureTextEx(gameFont, instructions[i], 16, 1) :
+            new Vector2(Raylib.MeasureText(instructions[i], 16), 16);
+        
+        Vector2 instructionPos = new Vector2((1000 - instructionMeasure.X) / 2, 480 + i * 25);
+        
+        if (customFontsLoaded)
+        {
+            Raylib.DrawTextEx(gameFont, instructions[i], instructionPos, 16, 1, Color.White);
+        }
+        else
+        {
+            Raylib.DrawText(instructions[i], (int)instructionPos.X, (int)instructionPos.Y, 16, Color.White);
+        }
+    }
+    
+    // Draw buttons
+    foreach (Button button in menuButtons)
+    {
+        button.Draw(customFontsLoaded, gameFont);
+    }
+}
+
+void DrawGameplay()
+{
+    // Sky background
+    Color skyTop = new Color(135, 206, 235, 255);    // Light blue
+    Color skyBottom = new Color(255, 255, 255, 255);  // White
+    
+    for (int y = 0; y < 700; y++)
+    {
+        float t = (float)y / 700;
+        Color currentColor = new Color(
+            (int)(skyTop.R * (1 - t) + skyBottom.R * t),
+            (int)(skyTop.G * (1 - t) + skyBottom.G * t),
+            (int)(skyTop.B * (1 - t) + skyBottom.B * t),
+            255
+        );
+        Raylib.DrawLine(0, y, 1000, y, currentColor);
+    }
+    
+    // Draw platforms
+    foreach (Platform platform in platforms)
+    {
+        platform.Draw();
+    }
+    
+    // Draw coins
+    foreach (Coin coin in coins)
+    {
+        coin.Draw(customFontsLoaded, gameFont);
+    }
+    
+    // Draw player
+    player.Draw();
+    
+    // Draw HUD
+    DrawHUD();
+}
+
+void DrawPause()
+{
+    // Draw game in background with overlay
+    DrawGameplay();
+    
+    // Semi-transparent overlay
+    Raylib.DrawRectangle(0, 0, 1000, 700, new Color(0, 0, 0, 150));
+    
+    // Pause menu background
+    Raylib.DrawRectangle(300, 200, 400, 300, new Color(40, 40, 60, 255));
+    Raylib.DrawRectangleLines(300, 200, 400, 300, Color.White);
+    
+    // Pause title
+    string pauseText = "GAME PAUSED";
+    Vector2 pauseMeasure = customFontsLoaded ?
+        Raylib.MeasureTextEx(titleFont, pauseText, 32, 2) :
+        new Vector2(Raylib.MeasureText(pauseText, 32), 32);
+    
+    Vector2 pausePos = new Vector2((1000 - pauseMeasure.X) / 2, 230);
+    
+    if (customFontsLoaded)
+    {
+        Raylib.DrawTextEx(titleFont, pauseText, pausePos, 32, 2, Color.White);
+    }
+    else
+    {
+        Raylib.DrawText(pauseText, (int)pausePos.X, (int)pausePos.Y, 32, Color.White);
+    }
+    
+    // Draw pause buttons
+    foreach (Button button in pauseButtons)
+    {
+        button.Draw(customFontsLoaded, gameFont);
+    }
+}
+
+void DrawGameOver()
+{
+    Raylib.ClearBackground(new Color(20, 20, 30, 255));
+    
+    // Result text
+    bool isVictory = coinsCollected >= coins.Count;
+    string resultText = isVictory ? "VICTORY!" : "GAME OVER";
+    Color resultColor = isVictory ? Color.Gold : Color.Red;
+    
+    Vector2 resultMeasure = customFontsLoaded ?
+        Raylib.MeasureTextEx(titleFont, resultText, 48, 2) :
+        new Vector2(Raylib.MeasureText(resultText, 48), 48);
+    
+    Vector2 resultPos = new Vector2((1000 - resultMeasure.X) / 2, 150);
+    
+    if (customFontsLoaded)
+    {
+        Raylib.DrawTextEx(titleFont, resultText, resultPos, 48, 2, resultColor);
+    }
+    else
+    {
+        Raylib.DrawText(resultText, (int)resultPos.X, (int)resultPos.Y, 48, resultColor);
+    }
+    
+    // Stats
+    string[] stats = {
+        $"Final Score: {score}",
+        $"Coins Collected: {coinsCollected}/{coins.Count}",
+        $"Time Played: {gameTime:F1} seconds",
+        $"Health Remaining: {player.Health}/3"
+    };
+    
+    for (int i = 0; i < stats.Length; i++)
+    {
+        Vector2 statMeasure = customFontsLoaded ?
+            Raylib.MeasureTextEx(gameFont, stats[i], 20, 1) :
+            new Vector2(Raylib.MeasureText(stats[i], 20), 20);
+        
+        Vector2 statPos = new Vector2((1000 - statMeasure.X) / 2, 250 + i * 30);
+        
+        if (customFontsLoaded)
+        {
+            Raylib.DrawTextEx(gameFont, stats[i], statPos, 20, 1, Color.White);
+        }
+        else
+        {
+            Raylib.DrawText(stats[i], (int)statPos.X, (int)statPos.Y, 20, Color.White);
+        }
+    }
+    
+    // Draw game over buttons
+    foreach (Button button in gameOverButtons)
+    {
+        button.Draw(customFontsLoaded, gameFont);
+    }
+}
+
+// === MAIN GAME INITIALIZATION ===
+InitializeLevel();
+InitializeButtons();
+
+// === MAIN GAME LOOP ===
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // === UPDATE PHASE ===
+    switch (currentState)
+    {
+        case GameState.Menu:
+            // Update menu buttons
+            foreach (Button button in menuButtons)
+            {
+                if (button.Update())
+                {
+                    if (button.Text == "Start Game")
+                    {
+                        currentState = GameState.Playing;
+                        InitializeLevel();
+                    }
+                    else if (button.Text == "Exit")
+                    {
+                        goto EndGame; // Exit the game loop
+                    }
+                }
+            }
+            break;
+            
+        case GameState.Playing:
+            gameTime += deltaTime;
+            
+            // Check for pause
+            if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+            {
+                currentState = GameState.Paused;
+            }
+            
+            // Update game entities
+            UpdatePlayerPhysics(deltaTime);
+            CheckCoinCollections();
+            
+            player.Update(deltaTime);
+            foreach (Coin coin in coins)
+            {
+                coin.Update(deltaTime);
+            }
+            break;
+            
+        case GameState.Paused:
+            // Update pause buttons
+            foreach (Button button in pauseButtons)
+            {
+                if (button.Update())
+                {
+                    if (button.Text == "Resume")
+                    {
+                        currentState = GameState.Playing;
+                    }
+                    else if (button.Text == "Main Menu")
+                    {
+                        currentState = GameState.Menu;
+                    }
+                }
+            }
+            
+            // Also allow ESC to resume
+            if (Raylib.IsKeyPressed(KeyboardKey.Escape))
+            {
+                currentState = GameState.Playing;
+            }
+            break;
+            
+        case GameState.GameOver:
+            // Update game over buttons
+            foreach (Button button in gameOverButtons)
+            {
+                if (button.Update())
+                {
+                    if (button.Text == "Play Again")
+                    {
+                        currentState = GameState.Playing;
+                        InitializeLevel();
+                    }
+                    else if (button.Text == "Main Menu")
+                    {
+                        currentState = GameState.Menu;
+                    }
+                }
+            }
+            break;
+    }
+    
+    // === RENDER PHASE ===
+    Raylib.BeginDrawing();
+    
+    switch (currentState)
+    {
+        case GameState.Menu:
+            DrawMenu();
+            break;
+        case GameState.Playing:
+            DrawGameplay();
+            break;
+        case GameState.Paused:
+            DrawPause();
+            break;
+        case GameState.GameOver:
+            DrawGameOver();
+            break;
+    }
+    
+    Raylib.EndDrawing();
+}
+
+EndGame:
+
+// === CLEANUP ===
+if (customFontsLoaded)
+{
+    Raylib.UnloadFont(gameFont);
+    Raylib.UnloadFont(titleFont);
+}
+
+if (audioInitialized)
+{
+    Raylib.CloseAudioDevice();
+}
+
+Raylib.CloseWindow();
+
+Console.WriteLine("🎉 Simple Platformer completed! Week 5 integration successful!");
+
+#!markdown
+
+**🚀 Complete Game Features Demonstrated:**
+
+### **Week 5 System Integration:**
+- ✅ **State Management (S25)**: Menu → Playing → Paused → Game Over flow
+- ✅ **Interactive Menus (S26)**: Mouse-controlled buttons with hover/press effects  
+- ✅ **Animation Systems (S27)**: Character movement animations, coin spinning, UI effects
+- ✅ **Audio Framework (S28)**: Audio system initialization with error handling
+- ✅ **Professional UI (S29)**: Custom fonts, HUD system, visual feedback
+
+### **Game Mechanics:**
+- **Physics System**: Gravity, jumping, platform collision detection
+- **Character Controller**: WASD/Arrow key movement with facing direction
+- **Collectible System**: Animated coins with collection feedback
+- **Health System**: Visual hearts display with damage/death mechanics  
+- **Win/Lose Conditions**: Collect all coins to win, lose all health to fail
+- **Score System**: Points for coin collection with completion bonus
+
+### **Professional Polish:**
+- **Visual Design**: Sky gradient background, animated elements, consistent UI
+- **User Experience**: Clear feedback, intuitive controls, pause functionality
+- **Performance**: 60 FPS target with efficient rendering and updates
+- **Error Handling**: Graceful fallbacks for missing fonts and audio
+- **Code Architecture**: Clean separation of systems, reusable components
+
+This complete platformer demonstrates how all Week 5 concepts work together to create a professional, engaging game experience!
+
+---
+
+## 5. Challenge: Enhance the Simple Platformer
+
+Your turn! These challenges will test your ability to integrate and extend the Week 5 systems:
+
+### Challenge 1: Advanced Audio Integration 🔊
+**Your Task**: Add comprehensive audio to the platformer using Session 28 techniques.
+
+**Requirements:**
+- **Background Music**: Looping game music that changes between menu and gameplay
+- **Sound Effects**: Jump sound, coin collection sound, damage sound, victory/defeat sounds
+- **Audio Controls**: Volume sliders in a settings menu accessible from main menu
+- **Dynamic Audio**: Audio that responds to game events (low health warning sounds, combo effects)
+
+**Audio Files to Implement:**
+- Menu music (looping)
+- Gameplay music (looping) 
+- Jump sound effect
+- Coin pickup sound effect
+- Damage/hurt sound effect
+- Victory fanfare
+- Game over sound
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+using System;
+
+// TODO: Enhance the platformer with complete audio system
+
+// Audio manager class
+public class AudioManager
+{
+    // TODO: Add audio loading, playback control, and volume management
+    // Include music streaming and sound effect management
+}
+
+// Settings menu for audio controls
+public class SettingsMenu
+{
+    // TODO: Create volume sliders and audio preference controls
+    // Integrate with main menu system
+}
+
+// Enhanced platformer with audio integration
+void RunPlatformerWithAudio()
+{
+    // TODO: Integrate audio system into the existing platformer
+    // Add audio cues for all game events
+    // Implement settings menu with audio controls
+    
+    Console.WriteLine("Enhanced platformer with full audio system!");
+}
+
+RunPlatformerWithAudio();
+
+#!markdown
+
+**Expected Audio Enhancements:**
+- Background music should enhance the game atmosphere
+- Sound effects should provide immediate feedback for player actions
+- Audio controls should allow players to customize their experience
+- All audio should integrate seamlessly with the existing game flow
+
+---
+
+### Challenge 2: Advanced Animation & Visual Effects ✨
+**Your Task**: Expand the animation system with particle effects and enhanced character animations.
+
+**Requirements:**
+- **Enhanced Character Animation**: Idle, walk, jump, and landing animation states
+- **Particle Effects**: Coin collection sparkles, jump dust clouds, damage effects
+- **Screen Transitions**: Smooth fade in/out between game states
+- **Visual Juice**: Screen shake on damage, camera follow, animated UI elements
+
+**Animation Features to Add:**
+- Character sprite sheets with multiple animation frames
+- Particle system for visual effects
+- Smooth camera following the player
+- Screen transition effects
+- UI animation (buttons, score counters, health indicators)
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+using System;
+using System.Collections.Generic;
+
+// TODO: Create advanced animation and effects system
+
+// Particle system
+public class ParticleSystem
+{
+    // TODO: Create particles for various effects
+    // Coin sparkles, jump dust, damage effects, etc.
+}
+
+// Enhanced animation controller
+public class AdvancedAnimationController
+{
+    // TODO: Support multiple animation states
+    // Smooth transitions between animations
+}
+
+// Camera system
+public class GameCamera
+{
+    // TODO: Implement smooth camera following
+    // Screen shake effects, smooth transitions
+}
+
+// Screen transition manager
+public class TransitionManager
+{
+    // TODO: Fade in/out effects between game states
+    // Loading screens, smooth state changes
+}
+
+// Enhanced platformer with advanced visuals
+void RunPlatformerWithAdvancedVisuals()
+{
+    // TODO: Integrate all visual enhancement systems
+    // Create a visually polished platformer experience
+    
+    Console.WriteLine("Enhanced platformer with advanced animations and effects!");
+}
+
+RunPlatformerWithAdvancedVisuals();
+
+#!markdown
+
+**Expected Visual Enhancements:**
+- Character should have smooth, professional-quality animations
+- Particle effects should make interactions feel satisfying and responsive
+- Camera should smoothly follow the player and enhance the gameplay experience
+- All transitions should be smooth and polished, never jarring or abrupt
+
+---
+
+### Challenge 3: Complete Game Polish & Features 🎮
+**Your Task**: Create a fully polished platformer with additional gameplay features and professional presentation.
+
+**Requirements:**
+- **Multiple Levels**: At least 3 different level layouts with increasing difficulty
+- **Power-ups**: Temporary abilities like double jump, speed boost, or invincibility
+- **Enemy AI**: Simple enemies with movement patterns and collision
+- **High Score System**: Persistent high score tracking and display
+- **Settings Menu**: Complete settings with graphics, audio, and control options
+
+**Advanced Features to Implement:**
+- Level progression system
+- Save/load functionality for high scores
+- Enemy AI with different movement patterns
+- Power-up collection and effects
+- Comprehensive settings menu
+- Game statistics tracking
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+using System;
+using System.Collections.Generic;
+
+// TODO: Create complete polished platformer
+
+// Level management system
+public class LevelManager
+{
+    // TODO: Multiple level layouts, progression system
+    // Level loading and transition management
+}
+
+// Power-up system
+public class PowerUpSystem
+{
+    // TODO: Different power-up types and effects
+    // Temporary ability modifications
+}
+
+// Enemy AI system
+public class EnemySystem
+{
+    // TODO: Simple enemy AI with movement patterns
+    // Collision with player and damage system
+}
+
+// High score and save system
+public class SaveSystem
+{
+    // TODO: Persistent high score storage
+    // Player statistics and achievements
+}
+
+// Complete settings menu
+public class CompleteSettingsMenu
+{
+    // TODO: Graphics settings, audio settings, control settings
+    // Save and load user preferences
+}
+
+// Final polished platformer
+void RunCompletePolishedPlatformer()
+{
+    // TODO: Integrate all systems into a complete, professional game
+    // Multiple levels, enemies, power-ups, settings, high scores
+    
+    Console.WriteLine("Complete polished platformer with all professional features!");
+}
+
+RunCompletePolishedPlatformer();
+
+#!markdown
+
+**Expected Polish Features:**
+- Game should feel like a complete, professional experience
+- Multiple levels should provide varied and engaging gameplay
+- All systems should work together seamlessly
+- Settings should allow players to customize their experience completely
+- High score system should motivate replayability
+
+---
+
+## 6. Week 5 Integration Reflection
+
+After completing this session and the challenges, consider how all the Week 5 systems work together:
+
+### **System Integration Questions:**
+1. **State Management**: How does the state system coordinate between all other systems?
+2. **Animation Timing**: How do animations synchronize with game logic and user input?
+3. **Audio Feedback**: How does audio enhance the player's understanding of game events?
+4. **UI Consistency**: How do custom fonts and consistent UI design improve player experience?
+5. **Performance Balance**: How do all these systems maintain smooth 60 FPS gameplay?
+
+### **Professional Development Insights:**
+- **Modular Design**: Each system can be developed and tested independently
+- **Event-Driven Architecture**: Systems communicate through clear interfaces
+- **User Experience Focus**: Every feature serves to improve player engagement
+- **Error Handling**: Graceful degradation when resources aren't available
+- **Code Reusability**: Components can be used in other game projects
+
+### **Real-World Applications:**
+- **Unity Translation**: These patterns translate directly to Unity development
+- **Team Development**: Clear system separation enables collaborative development  
+- **Scalability**: Architecture supports adding new features without breaking existing systems
+- **Maintenance**: Well-organized code is easier to debug and enhance
+- **Portfolio Quality**: Demonstrates professional game development skills
+
+---
+
+## 7. What's Next: Week 6 Preview
+
+In Week 6, we'll explore advanced topics that build on this solid foundation:
+
+### **Upcoming Advanced Topics:**
+- **Session 31**: 2D Camera Systems - Advanced camera control and effects
+- **Session 32**: Tilemap Systems - Efficient level design and rendering
+- **Session 33**: Advanced AI - Sophisticated enemy behavior and pathfinding
+- **Session 34**: Procedural Generation - Creating dynamic, varied content
+- **Session 35**: Final Project Workshop - Students create their own unique games
+- **Session 36**: Course Wrap-up - Portfolio presentation and Unity transition
+
+### **Skills You've Mastered:**
+- ✅ Complete game state management
+- ✅ Professional user interface design
+- ✅ Character animation and visual effects
+- ✅ Audio integration and feedback systems
+- ✅ Game architecture and system integration
+- ✅ Performance optimization and error handling
+
+---
+
+## Key Concepts Learned:
+- **Complete Game Architecture**: How professional games organize and coordinate multiple systems
+- **System Integration**: Making different components work together seamlessly
+- **User Experience Design**: Creating engaging, intuitive player interactions
+- **Performance Management**: Maintaining smooth gameplay with complex systems
+- **Professional Polish**: Adding details that elevate a game from functional to engaging
+- **Code Organization**: Structuring code for maintainability and collaboration
+
+Outstanding work completing Week 5! You now have the skills to create complete, professional-quality games that rival commercial indies. Week 6 will push these skills even further! 🎮🚀

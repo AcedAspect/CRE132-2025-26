@@ -1,0 +1,1708 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Animation
+
+## 🎯 Bringing Games to Life
+
+**Today's Learning Goals:**
+- 🎬 **Spritesheet Animation** for character movement and actions
+- 🎯 **DrawTextureRec** for precise sprite rendering from spritesheets
+- 🔄 **Animation State Machines** for complex character behaviors
+- ⏱️ **Frame Timing** and smooth animation control
+- ✨ **Interpolation Techniques** for smooth movement and transitions
+
+---
+
+## 1. The Problem: Static Games Feel Lifeless
+
+Even with perfect game logic and beautiful menus, static graphics make games feel amateur:
+
+### 😴 **Without Animation:**
+- Characters teleport instantly between positions
+- Objects appear and disappear abruptly
+- UI elements feel stiff and unresponsive
+- Players lose engagement quickly
+
+### ✨ **With Professional Animation:**
+- Characters have personality through movement
+- Smooth transitions guide player attention
+- Visual feedback makes interactions satisfying
+- Games feel polished and professional
+
+**Real Examples:** Compare early Pong (static paddles) to modern games where every element moves smoothly!
+
+---
+
+## 2. Understanding Spritesheets: Animation's Foundation
+
+A **spritesheet** is like a film strip - multiple frames of animation stored in a single image file:
+
+```
+[Frame 1][Frame 2][Frame 3][Frame 4]
+[  Idle ][  Walk ][  Walk ][  Jump ]
+```
+
+### **Why Use Spritesheets?**
+- **Efficiency**: One image file instead of dozens
+- **Performance**: Faster loading and rendering
+- **Organization**: All character animations in one place
+- **Memory**: Less GPU memory usage than separate files
+
+### **Spritesheet Anatomy:**
+- **Frame Width/Height**: Size of each individual animation frame
+- **Columns/Rows**: How frames are arranged in the grid
+- **Frame Count**: Total number of animation frames
+- **Animation Speed**: How fast to cycle through frames
+
+---
+
+## 3. Frame-Based Animation: The Core Concept
+
+Animation is just showing different images rapidly to create the illusion of movement:
+
+#!csharp
+
+// Conceptual Animation System - Frame-Based Animation
+public class SimpleAnimation
+{
+    public int CurrentFrame { get; set; } = 0;
+    public int TotalFrames { get; set; }
+    public float FrameTime { get; set; } = 0.1f; // Seconds per frame
+    public float Timer { get; set; } = 0;
+    public bool IsPlaying { get; set; } = true;
+    public bool Loop { get; set; } = true;
+    
+    public SimpleAnimation(int totalFrames, float frameTime = 0.1f)
+    {
+        TotalFrames = totalFrames;
+        FrameTime = frameTime;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (!IsPlaying) return;
+        
+        Timer += deltaTime;
+        
+        if (Timer >= FrameTime)
+        {
+            Timer = 0;
+            CurrentFrame++;
+            
+            if (CurrentFrame >= TotalFrames)
+            {
+                if (Loop)
+                {
+                    CurrentFrame = 0; // Loop back to start
+                }
+                else
+                {
+                    CurrentFrame = TotalFrames - 1; // Stay on last frame
+                    IsPlaying = false; // Stop animation
+                }
+            }
+        }
+    }
+    
+    public void Reset()
+    {
+        CurrentFrame = 0;
+        Timer = 0;
+        IsPlaying = true;
+    }
+    
+    public void Play() => IsPlaying = true;
+    public void Pause() => IsPlaying = false;
+    public void Stop() => Reset();
+}
+
+// Test the animation system
+Console.WriteLine("=== Animation System Demonstration ===");
+
+SimpleAnimation walkAnimation = new SimpleAnimation(4, 0.2f); // 4 frames, 0.2 seconds each
+Console.WriteLine($"Created walk animation: {walkAnimation.TotalFrames} frames");
+
+// Simulate 2 seconds of animation updates
+float simulatedTime = 0;
+float deltaTime = 1.0f / 60.0f; // 60 FPS
+
+for (int i = 0; i < 120; i++) // 2 seconds at 60 FPS
+{
+    walkAnimation.Update(deltaTime);
+    simulatedTime += deltaTime;
+    
+    // Show frame changes
+    if (i % 12 == 0) // Every 0.2 seconds
+    {
+        Console.WriteLine($"Time: {simulatedTime:F2}s - Frame: {walkAnimation.CurrentFrame}");
+    }
+}
+
+Console.WriteLine("\nAnimation completed one full cycle!");
+
+#!markdown
+
+**Animation Timing Explained:**
+- **60 FPS**: Game runs at 60 frames per second
+- **Frame Time 0.2s**: Each animation frame shows for 0.2 seconds  
+- **12 Game Frames**: 0.2s × 60fps = 12 game frames per animation frame
+- **Loop Cycle**: 4 frames × 0.2s = 0.8 seconds per full animation
+
+---
+
+## 4. Text Game Example: ASCII Character Animation
+
+Let's create a text-based character that "walks" using ASCII art animation:
+
+#!csharp
+
+// SimpleAnimation class - needed for ASCIICharacter
+public class SimpleAnimation
+{
+    public int CurrentFrame { get; set; } = 0;
+    public int TotalFrames { get; set; }
+    public float FrameTime { get; set; } = 0.1f; // Seconds per frame
+    public float Timer { get; set; } = 0;
+    public bool IsPlaying { get; set; } = true;
+    public bool Loop { get; set; } = true;
+    
+    public SimpleAnimation(int totalFrames, float frameTime = 0.1f)
+    {
+        TotalFrames = totalFrames;
+        FrameTime = frameTime;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (!IsPlaying) return;
+        
+        Timer += deltaTime;
+        
+        if (Timer >= FrameTime)
+        {
+            Timer = 0;
+            CurrentFrame++;
+            
+            if (CurrentFrame >= TotalFrames)
+            {
+                if (Loop)
+                {
+                    CurrentFrame = 0; // Loop back to start
+                }
+                else
+                {
+                    CurrentFrame = TotalFrames - 1; // Stay on last frame
+                    IsPlaying = false; // Stop animation
+                }
+            }
+        }
+    }
+    
+    public void Reset()
+    {
+        CurrentFrame = 0;
+        Timer = 0;
+        IsPlaying = true;
+    }
+    
+    public void Play() => IsPlaying = true;
+    public void Pause() => IsPlaying = false;
+    public void Stop() => Reset();
+}
+
+public class ASCIICharacter
+{
+    private string[] walkFrames = {
+        "  O  \n /|\\ \n / \\ ",  // Frame 0: Standing
+        "  O  \n /|\\ \n/  \\",   // Frame 1: Left foot forward
+        "  O  \n /|\\ \n \\ /",   // Frame 2: Both feet together 
+        "  O  \n /|\\ \n\\  /",   // Frame 3: Right foot forward
+    };
+    
+    private string[] idleFrames = {
+        "  O  \n /|\\ \n | |",    // Frame 0: Standing straight
+        "  O  \n\\|/ \n | |",    // Frame 1: Arms down
+        "  o  \n /|\\ \n | |",   // Frame 2: Head tilt
+        "  O  \n /|\\ \n | |",   // Frame 3: Back to normal
+    };
+    
+    public int X { get; set; } = 5;
+    public int Y { get; set; } = 5;
+    public string State { get; set; } = "idle"; // "idle" or "walking"
+    public string Direction { get; set; } = "right"; // "left" or "right"
+    
+    private SimpleAnimation walkAnim;
+    private SimpleAnimation idleAnim;
+    
+    public ASCIICharacter()
+    {
+        walkAnim = new SimpleAnimation(4, 0.3f);
+        idleAnim = new SimpleAnimation(4, 0.8f); // Slower idle animation
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (State == "walking")
+        {
+            walkAnim.Update(deltaTime);
+            idleAnim.Reset(); // Reset idle when walking
+        }
+        else
+        {
+            idleAnim.Update(deltaTime);
+            walkAnim.Reset(); // Reset walk when idle
+        }
+    }
+    
+    public void StartWalking(string direction)
+    {
+        State = "walking";
+        Direction = direction;
+        walkAnim.Reset();
+    }
+    
+    public void StopWalking()
+    {
+        State = "idle";
+        idleAnim.Reset();
+    }
+    
+    public void Move(float deltaTime)
+    {
+        if (State == "walking")
+        {
+            float speed = 5.0f; // Characters per second
+            if (Direction == "right")
+                X += (int)(speed * deltaTime);
+            else
+                X -= (int)(speed * deltaTime);
+                
+            // Keep on screen (assuming 80 character width)
+            X = Math.Clamp(X, 0, 75);
+        }
+    }
+    
+    public string GetCurrentFrame()
+    {
+        string[] currentFrames = State == "walking" ? walkFrames : idleFrames;
+        int frameIndex = State == "walking" ? walkAnim.CurrentFrame : idleAnim.CurrentFrame;
+        
+        string frame = currentFrames[frameIndex];
+        
+        // Flip character for left direction
+        if (Direction == "left" && State == "walking")
+        {
+            // Simple character flipping for ASCII
+            frame = frame.Replace("/", "TEMP").Replace("\\", "/").Replace("TEMP", "\\");
+        }
+        
+        return frame;
+    }
+    
+    public void Display()
+    {
+        // Note: Console.Clear() doesn't work in polyglot notebooks
+        Console.WriteLine("=== ASCII Character Display ===");
+        
+        // Create display area
+        string[] lines = new string[20];
+        for (int i = 0; i < lines.Length; i++)
+            lines[i] = new string(' ', 80);
+        
+        // Place character in the display
+        string[] characterLines = GetCurrentFrame().Split('\n');
+        for (int i = 0; i < characterLines.Length && (Y + i) < lines.Length; i++)
+        {
+            string line = lines[Y + i];
+            string charLine = characterLines[i];
+            
+            // Insert character at X position
+            if (X < line.Length && X + charLine.Length <= line.Length)
+            {
+                lines[Y + i] = line.Substring(0, X) + charLine + line.Substring(X + charLine.Length);
+            }
+        }
+        
+        // Display the scene
+        Console.WriteLine("=== ASCII Character Animation ===");
+        Console.WriteLine($"State: {State} | Direction: {Direction} | Position: ({X}, {Y})");
+        Console.WriteLine();
+        
+        foreach (string line in lines)
+            Console.WriteLine(line);
+            
+        Console.WriteLine("\nControls: A/D = Walk Left/Right, S = Stop, Q = Quit");
+    }
+}
+
+// Demonstrate ASCII character animation
+Console.WriteLine("ASCII Character Animation Demo");
+Console.WriteLine("Simulating character movement and animation...");
+
+ASCIICharacter character = new ASCIICharacter();
+string[] actions = { "walk_right", "wait", "walk_left", "wait", "idle", "walk_right" };
+float actionTime = 0;
+int currentAction = 0;
+
+for (int frame = 0; frame < 180; frame++) // 3 seconds of simulation
+{
+    float deltaTime = 1.0f / 60.0f;
+    actionTime += deltaTime;
+    
+    // Change action every 0.5 seconds
+    if (actionTime >= 0.5f && currentAction < actions.Length)
+    {
+        string action = actions[currentAction];
+        
+        switch (action)
+        {
+            case "walk_right":
+                character.StartWalking("right");
+                Console.WriteLine($"Action: Walking Right (Frame {frame})");
+                break;
+            case "walk_left":
+                character.StartWalking("left");
+                Console.WriteLine($"Action: Walking Left (Frame {frame})");
+                break;
+            case "idle":
+                character.StopWalking();
+                Console.WriteLine($"Action: Idle (Frame {frame})");
+                break;
+            case "wait":
+                // Continue current action
+                Console.WriteLine($"Action: Continue (Frame {frame})");
+                break;
+        }
+        
+        currentAction++;
+        actionTime = 0;
+    }
+    
+    character.Update(deltaTime);
+    character.Move(deltaTime);
+    
+    // Display ASCII animation every 30 frames (show key moments)
+    if (frame % 30 == 0)
+    {
+        Console.WriteLine("=== ASCII CHARACTER ANIMATION ===");
+        Console.WriteLine($"Frame: {frame} | Action: {(currentAction < actions.Length ? actions[currentAction] : "complete")}");
+        Console.WriteLine($"State: {character.State} | Direction: {character.Direction} | Position: {character.X}");
+        Console.WriteLine();
+        
+        // Show the actual ASCII art character
+        string[] characterLines = character.GetCurrentFrame().Split('\n');
+        
+        // Create a simple scene
+        Console.WriteLine("Scene:");
+        Console.WriteLine(new string('=', 40));
+        
+        // Position the character in the scene
+        for (int lineIndex = 0; lineIndex < characterLines.Length; lineIndex++)
+        {
+            string sceneLine = new string(' ', character.X) + characterLines[lineIndex];
+            if (sceneLine.Length < 40)
+                sceneLine += new string(' ', 40 - sceneLine.Length);
+            Console.WriteLine(sceneLine);
+        }
+        
+        // Add ground
+        Console.WriteLine(new string('=', 40));
+        Console.WriteLine($"Time: {frame * deltaTime:F1}s");
+        Console.WriteLine(); // Separator for readability
+    }
+}
+
+Console.WriteLine("\nASCII Animation demonstration complete!");
+
+#!markdown
+
+**ASCII Animation Demonstrates:**
+- **Multiple Animation States**: Walking vs idle with different frame sets
+- **Direction Handling**: Character flipping for left/right movement
+- **Smooth State Transitions**: Clean switching between animation types
+- **Position Integration**: Animation combined with movement
+- **Timing Control**: Different speeds for different animation types
+
+---
+
+## 5. Raylib Visual Example: Real Spritesheet Animation
+
+Now let's create a proper visual animation system using a real spritesheet! We'll use the `scarfy.png` character running animation:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!markdown
+
+## Bare Bones Animation
+
+#!csharp
+
+using System;
+using System.Numerics;
+using static Raylib_cs.Raylib;
+using Raylib_cs;
+
+const int MaxFrameSpeed = 15;
+const int MinFrameSpeed = 1;
+
+// Initialization
+const int screenWidth = 800;
+const int screenHeight = 450;
+
+InitWindow(screenWidth, screenHeight, "raylib [texture] example - texture rectangle");
+
+// NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
+Texture2D scarfy = LoadTexture("./resources/scarfy.png");
+
+Vector2 position = new(350.0f, 280.0f);
+Rectangle frameRec = new(0.0f, 0.0f, (float)scarfy.Width / 6, (float)scarfy.Height);
+int currentFrame = 0;
+
+int framesCounter = 0;
+
+// Number of spritesheet frames shown by second
+int framesSpeed = 8;
+
+SetTargetFPS(60);
+Console.WriteLine("Press RIGHT/LEFT arrows to change speed!");
+
+// Main game loop
+while (!WindowShouldClose())
+{
+    // Update
+    framesCounter++;
+
+    if (framesCounter >= (60 / framesSpeed))
+    {
+        framesCounter = 0;
+        currentFrame++;
+
+        if (currentFrame > 5)
+        {
+            currentFrame = 0;
+        }
+
+        frameRec.X = (float)currentFrame * (float)scarfy.Width / 6;
+    }
+
+    if (IsKeyPressed(KeyboardKey.Right))
+    {
+        framesSpeed++;
+    }
+    else if (IsKeyPressed(KeyboardKey.Left))
+    {
+        framesSpeed--;
+    }
+
+    framesSpeed = Math.Clamp(framesSpeed, MinFrameSpeed, MaxFrameSpeed);
+
+    // Draw
+    BeginDrawing();
+    ClearBackground(Color.RayWhite);
+
+    DrawTexture(scarfy, 15, 40, Color.White);
+    DrawRectangleLines(15, 40, scarfy.Width, scarfy.Height, Color.Lime);
+    DrawRectangleLines(
+        15 + (int)frameRec.X,
+        40 + (int)frameRec.Y,
+        (int)frameRec.Width,
+        (int)frameRec.Height,
+        Color.Red
+    );
+
+    DrawText("FRAME SPEED: ", 165, 210, 10, Color.DarkGray);
+    DrawText($"{framesSpeed:2F} FPS", 575, 210, 10, Color.DarkGray);
+    DrawText("PRESS RIGHT/LEFT KEYS to CHANGE SPEED!", 290, 240, 10, Color.DarkGray);
+
+    for (int i = 0; i < MaxFrameSpeed; i++)
+    {
+        if (i < framesSpeed)
+        {
+            DrawRectangle(250 + 21 * i, 205, 20, 20, Color.Red);
+        }
+        DrawRectangleLines(250 + 21 * i, 205, 20, 20, Color.Maroon);
+    }
+
+    // Draw part of the texture
+    DrawTextureRec(scarfy, frameRec, position, Color.White);
+    DrawText("(c) Scarfy sprite by Eiden Marsal", screenWidth - 200, screenHeight - 20, 10, Color.Gray);
+
+    EndDrawing();
+}
+
+// De-Initialization
+UnloadTexture(scarfy);
+CloseWindow();
+
+#!markdown
+
+## Moving Animation
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+using System.IO;
+
+// Real Spritesheet Animation with scarfy.png
+public class SpritesheetCharacter
+{
+    public Vector2 Position { get; set; }
+    public Vector2 Velocity { get; set; }
+    
+    private Texture2D spritesheet;
+    private int currentFrame = 0;
+    private float frameTimer = 0;
+    private float frameTime = 0.1f; // 10 frames per second
+    private int totalFrames = 6; // scarfy.png has 6 frames
+    private int frameWidth = 32; // Each frame is 32 pixels wide
+    private int frameHeight = 32; // Each frame is 32 pixels tall
+    private float scale = 1.5f; // Scale for better window fit (was 3.0f)
+    
+    public SpritesheetCharacter(Vector2 startPosition)
+    {
+        Position = startPosition;
+        
+        // Try to load the spritesheet (with multiple path attempts and debugging)
+        string spritepath = Path.Combine("resources", "scarfy.png");
+
+        Console.WriteLine($"Current working directory: {Directory.GetCurrentDirectory()}");
+        
+        bool loaded = false;
+
+        try
+        {
+            if (File.Exists(spritepath))
+                {
+                    Console.WriteLine($"Found file at: {spritepath}");
+                    spritesheet = Raylib.LoadTexture(spritepath);
+                    if (spritesheet.Id != 0)
+                    {
+                        Console.WriteLine($"✅ Loaded scarfy.png successfully from: {spritepath}");
+                        
+                        // Debug: Show actual texture dimensions
+                        Console.WriteLine($"📏 Texture dimensions: {spritesheet.Width}x{spritesheet.Height}");
+                        
+                        // Calculate correct frame dimensions (assuming horizontal spritesheet)
+                        frameWidth = spritesheet.Width / totalFrames; // 6 frames horizontally
+                        frameHeight = spritesheet.Height; // Full height for each frame
+                        
+                        Console.WriteLine($"🎬 Calculated frame size: {frameWidth}x{frameHeight} pixels");
+                        Console.WriteLine($"🔍 Frame calculation: {spritesheet.Width} ÷ {totalFrames} = {frameWidth} width");
+                        
+                        loaded = true;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"File not found at: {spritepath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading {spritepath}: {ex.Message}");
+
+            
+            if (!loaded)
+            {
+                Console.WriteLine("❌ Could not load scarfy.png from any path - using fallback rectangles");
+                // We'll draw colored rectangles as fallback
+            }
+        }
+    }
+    
+    public void Update(float deltaTime)
+    {
+        // Update animation frame
+        frameTimer += deltaTime;
+        
+        if (frameTimer >= frameTime)
+        {
+            frameTimer = 0;
+            currentFrame = (currentFrame + 1) % totalFrames; // Loop through frames
+        }
+        
+        // Apply movement
+        Position += Velocity * deltaTime;
+        
+        // Wrap around screen edges
+        if (Position.X > 800) Position = new Vector2(-frameWidth * scale, Position.Y);
+        if (Position.X < -frameWidth * scale) Position = new Vector2(800, Position.Y);
+        if (Position.Y > 600) Position = new Vector2(Position.X, -frameHeight * scale);
+        if (Position.Y < -frameHeight * scale) Position = new Vector2(Position.X, 600);
+    }
+    
+    public void Draw()
+    {
+        if (spritesheet.Id != 0) // Check if texture loaded successfully
+        {
+            // Draw using real spritesheet with DrawTextureRec
+            Rectangle sourceRect = new Rectangle(
+                currentFrame * frameWidth, // X position in spritesheet
+                0,                        // Y position (scarfy is single row)
+                frameWidth,               // Width of one frame
+                frameHeight               // Height of one frame
+            );
+            
+            Rectangle destRect = new Rectangle(
+                Position.X,
+                Position.Y,
+                frameWidth * scale,    // Scaled width
+                frameHeight * scale    // Scaled height
+            );
+            
+            // DrawTexturePro for scaling and positioning
+            Raylib.DrawTexturePro(spritesheet, sourceRect, destRect, Vector2.Zero, 0.0f, Color.White);
+        }
+        else
+        {
+            // Fallback: Draw colored rectangle with frame indication
+            Color frameColor = currentFrame switch
+            {
+                0 => Color.Red,
+                1 => Color.Orange,
+                2 => Color.Yellow,
+                3 => Color.Green,
+                4 => Color.Blue,
+                5 => Color.Purple,
+                _ => Color.White
+            };
+            
+            Raylib.DrawRectangle(
+                (int)Position.X, 
+                (int)Position.Y, 
+                (int)(frameWidth * scale), 
+                (int)(frameHeight * scale), 
+                frameColor
+            );
+            
+            // Frame number
+            Raylib.DrawText($"{currentFrame + 1}", (int)Position.X + 10, (int)Position.Y + 10, 20, Color.White);
+        }
+        
+        // Animation info
+        Raylib.DrawText($"Frame: {currentFrame + 1}/{totalFrames}", 10, 10, 20, Color.White);
+        Raylib.DrawText($"Timer: {frameTimer:F2}s", 10, 35, 16, Color.LightGray);
+    }
+    
+    public void Cleanup()
+    {
+        if (spritesheet.Id != 0)
+        {
+            Raylib.UnloadTexture(spritesheet);
+        }
+    }
+}
+
+// Interactive Spritesheet Demo
+Console.WriteLine("=== REAL SPRITESHEET ANIMATION DEMO ===");
+Console.WriteLine("This demo will try to load scarfy.png from multiple possible locations.");
+Console.WriteLine("Check the console output to see where the file was found (or should be placed).");
+Console.WriteLine();
+Console.WriteLine("If scarfy.png is found: You'll see the real character running!");
+Console.WriteLine("If not found: You'll see colored rectangles with frame numbers.");
+Console.WriteLine();
+
+Raylib.InitWindow(800, 600, "Real Spritesheet Animation - Scarfy Running");
+Raylib.SetTargetFPS(60);
+
+// Create multiple characters for a more interesting demo
+SpritesheetCharacter[] characters = {
+    new SpritesheetCharacter(new Vector2(50, 150)) { Velocity = new Vector2(80, 0) },
+    new SpritesheetCharacter(new Vector2(50, 250)) { Velocity = new Vector2(100, 20) },
+    new SpritesheetCharacter(new Vector2(50, 350)) { Velocity = new Vector2(90, -25) }
+};
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Update all characters
+    foreach (var character in characters)
+    {
+        character.Update(deltaTime);
+    }
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(new Color(50, 80, 50, 255)); // Forest green background
+    
+    // Title
+    Raylib.DrawText("REAL SPRITESHEET ANIMATION", 220, 20, 24, Color.White);
+    
+    // Draw all characters
+    foreach (var character in characters)
+    {
+        character.Draw();
+    }
+    
+    // Instructions
+    Raylib.DrawText("Features:", 10, 500, 18, Color.White);
+    Raylib.DrawText("• Real spritesheet loading with error handling", 10, 525, 14, Color.LightGray);
+    Raylib.DrawText("• DrawTexturePro for scaling and positioning", 10, 545, 14, Color.LightGray);
+    Raylib.DrawText("• Frame cycling and animation timing", 10, 565, 14, Color.LightGray);
+    
+    Raylib.DrawText("Troubleshooting:", 400, 480, 16, Color.Yellow);
+    Raylib.DrawText("If seeing colored rectangles instead of character:", 400, 500, 14, Color.LightGray);
+    Raylib.DrawText("• Check console output for file paths tried", 400, 520, 14, Color.LightGray);
+    Raylib.DrawText("• Place scarfy.png in working directory/resources/", 400, 540, 14, Color.LightGray);
+    Raylib.DrawText("• Ensure file is named exactly 'scarfy.png'", 400, 560, 14, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+// Cleanup
+foreach (var character in characters)
+{
+    character.Cleanup();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Real Spritesheet Features Demonstrated:**
+- 🖼️ **Actual Image Loading**: `LoadTexture()` with error handling for missing files
+- 🎯 **DrawTexturePro**: Professional sprite rendering with scaling and positioning
+- 📐 **Source Rectangles**: Precise frame extraction from spritesheet grid
+- 🔄 **Frame Cycling**: Smooth animation through all 6 frames of scarfy
+- ⚡ **Performance**: Multiple characters sharing single loaded texture
+- 🛡️ **Error Handling**: Graceful fallback when sprite file isn't found
+
+**Technical Benefits:**
+- **Memory Efficient**: One texture file instead of 6 separate images
+- **GPU Optimized**: Better performance than multiple texture switches
+- **Industry Standard**: How professional games handle character animation
+- **Scalable**: Easy to add more characters or animation states
+
+---
+
+## 6. Advanced Animation System (Simulated)
+
+For learning purposes, here's a more complex animation system using simulated frames (since we need to work without external dependencies):
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Numerics;
+
+// Professional Animation System for Raylib
+public class AnimationFrame
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    
+    public AnimationFrame(int x, int y, int width, int height)
+    {
+        X = x; Y = y; Width = width; Height = height;
+    }
+}
+
+public class Animation
+{
+    public string Name { get; set; }
+    public AnimationFrame[] Frames { get; set; }
+    public float FrameTime { get; set; }
+    public bool Loop { get; set; }
+    
+    public int CurrentFrame { get; set; } = 0;
+    public float Timer { get; set; } = 0;
+    public bool IsPlaying { get; set; } = true;
+    
+    public Animation(string name, AnimationFrame[] frames, float frameTime, bool loop = true)
+    {
+        Name = name;
+        Frames = frames;
+        FrameTime = frameTime;
+        Loop = loop;
+    }
+    
+    public void Update(float deltaTime)
+    {
+        if (!IsPlaying || Frames.Length == 0) return;
+        
+        Timer += deltaTime;
+        
+        if (Timer >= FrameTime)
+        {
+            Timer = 0;
+            CurrentFrame++;
+            
+            if (CurrentFrame >= Frames.Length)
+            {
+                if (Loop)
+                {
+                    CurrentFrame = 0;
+                }
+                else
+                {
+                    CurrentFrame = Frames.Length - 1;
+                    IsPlaying = false;
+                }
+            }
+        }
+    }
+    
+    public AnimationFrame GetCurrentFrame()
+    {
+        return Frames[CurrentFrame];
+    }
+    
+    public void Reset()
+    {
+        CurrentFrame = 0;
+        Timer = 0;
+        IsPlaying = true;
+    }
+}
+
+public class AnimatedCharacter
+{
+    public Vector2 Position { get; set; }
+    public Vector2 Velocity { get; set; }
+    public string CurrentAnimationName { get; set; } = "idle";
+    
+    private Dictionary<string, Animation> animations;
+    private Vector2 size = new Vector2(48, 64);
+    
+    public AnimatedCharacter(Vector2 startPosition)
+    {
+        Position = startPosition;
+        animations = new Dictionary<string, Animation>();
+        SetupAnimations();
+    }
+    
+    private void SetupAnimations()
+    {
+        // Simulated spritesheet frames (normally you'd load from an image)
+        // We'll create different visual patterns for each animation state
+        
+        // Idle animation - subtle breathing effect
+        AnimationFrame[] idleFrames = {
+            new AnimationFrame(0, 0, 48, 64),    // Normal
+            new AnimationFrame(48, 0, 48, 66),   // Slightly taller (inhale)
+            new AnimationFrame(96, 0, 48, 64),   // Normal
+            new AnimationFrame(144, 0, 48, 62)   // Slightly shorter (exhale)
+        };
+        animations["idle"] = new Animation("idle", idleFrames, 0.6f);
+        
+        // Walk animation - bouncing motion
+        AnimationFrame[] walkFrames = {
+            new AnimationFrame(0, 70, 48, 64),   // Left foot forward
+            new AnimationFrame(48, 70, 48, 66),  // Mid step (up)
+            new AnimationFrame(96, 70, 48, 64),  // Right foot forward
+            new AnimationFrame(144, 70, 48, 62), // Mid step (down)
+            new AnimationFrame(192, 70, 48, 64), // Left foot forward again
+            new AnimationFrame(240, 70, 48, 66)  // Mid step (up)
+        };
+        animations["walk"] = new Animation("walk", walkFrames, 0.15f);
+        
+        // Jump animation - single jump sequence
+        AnimationFrame[] jumpFrames = {
+            new AnimationFrame(0, 140, 48, 64),  // Crouch
+            new AnimationFrame(48, 140, 48, 68), // Launch
+            new AnimationFrame(96, 140, 48, 70), // Peak
+            new AnimationFrame(144, 140, 48, 68), // Falling
+            new AnimationFrame(192, 140, 48, 64)  // Landing
+        };
+        animations["jump"] = new Animation("jump", jumpFrames, 0.2f, false); // Don't loop
+        
+        // Attack animation - quick strike
+        AnimationFrame[] attackFrames = {
+            new AnimationFrame(0, 210, 48, 64),  // Wind up
+            new AnimationFrame(48, 210, 56, 64), // Strike (wider)
+            new AnimationFrame(104, 210, 48, 64), // Follow through
+            new AnimationFrame(152, 210, 48, 64)  // Return to normal
+        };
+        animations["attack"] = new Animation("attack", attackFrames, 0.1f, false);
+    }
+    
+    public void Update(float deltaTime)
+    {
+        // Update current animation
+        if (animations.ContainsKey(CurrentAnimationName))
+        {
+            animations[CurrentAnimationName].Update(deltaTime);
+            
+            // Auto-return to idle after non-looping animations finish
+            if (!animations[CurrentAnimationName].IsPlaying && CurrentAnimationName != "idle")
+            {
+                SetAnimation("idle");
+            }
+        }
+        
+        // Apply movement
+        Position += Velocity * deltaTime;
+        
+        // Simple boundary checking
+        Position = new Vector2(
+            Math.Clamp(Position.X, 0, 800 - size.X),
+            Math.Clamp(Position.Y, 0, 600 - size.Y)
+        );
+        
+        // Auto-set walking animation based on movement
+        if (Velocity.Length() > 10 && CurrentAnimationName == "idle")
+        {
+            SetAnimation("walk");
+        }
+        else if (Velocity.Length() < 10 && CurrentAnimationName == "walk")
+        {
+            SetAnimation("idle");
+        }
+    }
+    
+    public void SetAnimation(string animationName)
+    {
+        if (animations.ContainsKey(animationName) && CurrentAnimationName != animationName)
+        {
+            CurrentAnimationName = animationName;
+            animations[animationName].Reset();
+        }
+    }
+    
+    public void Draw()
+    {
+        if (!animations.ContainsKey(CurrentAnimationName)) return;
+        
+        Animation currentAnim = animations[CurrentAnimationName];
+        AnimationFrame frame = currentAnim.GetCurrentFrame();
+        
+        // Draw character based on current animation frame
+        // We'll simulate different sprites with different visual patterns
+        DrawCharacterFrame(frame);
+        
+        // Draw animation info
+        Raylib.DrawText($"Animation: {CurrentAnimationName}", 10, 550, 16, Color.White);
+        Raylib.DrawText($"Frame: {currentAnim.CurrentFrame + 1}/{currentAnim.Frames.Length}", 10, 570, 16, Color.LightGray);
+    }
+    
+    private void DrawCharacterFrame(AnimationFrame frame)
+    {
+        // Draw character body (simulating sprite variations)
+        Color bodyColor = GetBodyColorForAnimation();
+        Color accentColor = GetAccentColorForFrame(frame);
+        
+        // Main body
+        Raylib.DrawRectangle((int)Position.X, (int)Position.Y, frame.Width, frame.Height, bodyColor);
+        
+        // Head (positioned at top of character)
+        int headSize = CurrentAnimationName == "jump" ? 12 : 10;
+        Raylib.DrawCircle((int)Position.X + frame.Width/2, (int)Position.Y + headSize + 5, headSize, accentColor);
+        
+        // Arms (position varies by animation)
+        Vector2 leftArm = GetArmPosition(frame, true);
+        Vector2 rightArm = GetArmPosition(frame, false);
+        Raylib.DrawCircle((int)leftArm.X, (int)leftArm.Y, 6, accentColor);
+        Raylib.DrawCircle((int)rightArm.X, (int)rightArm.Y, 6, accentColor);
+        
+        // Legs (position varies by animation)
+        Vector2 leftLeg = GetLegPosition(frame, true);
+        Vector2 rightLeg = GetLegPosition(frame, false);
+        Raylib.DrawCircle((int)leftLeg.X, (int)leftLeg.Y, 8, bodyColor);
+        Raylib.DrawCircle((int)rightLeg.X, (int)rightLeg.Y, 8, bodyColor);
+        
+        // Animation-specific effects
+        DrawAnimationEffects(frame);
+    }
+    
+    private Color GetBodyColorForAnimation()
+    {
+        return CurrentAnimationName switch
+        {
+            "idle" => Color.Blue,
+            "walk" => Color.Green,
+            "jump" => Color.Yellow,
+            "attack" => Color.Red,
+            _ => Color.Gray
+        };
+    }
+    
+    private Color GetAccentColorForFrame(AnimationFrame frame)
+    {
+        // Create frame-based color variation
+        int frameHash = frame.X + frame.Y;
+        return new Color(180 + frameHash % 75, 180 + frameHash % 75, 255, 255);
+    }
+    
+    private Vector2 GetArmPosition(AnimationFrame frame, bool isLeft)
+    {
+        float baseX = Position.X + (isLeft ? 12 : frame.Width - 12);
+        float baseY = Position.Y + 25;
+        
+        // Animate arms based on animation type
+        float offset = CurrentAnimationName switch
+        {
+            "walk" => (float)Math.Sin(Raylib.GetTime() * 8) * 8,
+            "attack" => isLeft ? 15 : -15,
+            "jump" => -10,
+            _ => 0
+        };
+        
+        return new Vector2(baseX + (isLeft ? offset : -offset), baseY);
+    }
+    
+    private Vector2 GetLegPosition(AnimationFrame frame, bool isLeft)
+    {
+        float baseX = Position.X + (isLeft ? 15 : frame.Width - 15);
+        float baseY = Position.Y + frame.Height - 5;
+        
+        // Animate legs based on animation type
+        float offset = CurrentAnimationName switch
+        {
+            "walk" => (float)Math.Sin(Raylib.GetTime() * 8 + (isLeft ? 0 : Math.PI)) * 6,
+            "jump" => frame.Height > 65 ? -8 : 0, // Legs up during jump peak
+            _ => 0
+        };
+        
+        return new Vector2(baseX, baseY + offset);
+    }
+    
+    private void DrawAnimationEffects(AnimationFrame frame)
+    {
+        switch (CurrentAnimationName)
+        {
+            case "attack":
+                // Attack slash effect
+                if (animations[CurrentAnimationName].CurrentFrame == 1)
+                {
+                    Raylib.DrawRectangle((int)Position.X + frame.Width, (int)Position.Y + 20, 20, 4, Color.White);
+                }
+                break;
+                
+            case "jump":
+                // Jump particles at takeoff
+                if (animations[CurrentAnimationName].CurrentFrame == 1)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        float particleX = Position.X + 15 + i * 6;
+                        float particleY = Position.Y + frame.Height + 5;
+                        Raylib.DrawCircle((int)particleX, (int)particleY, 3, new Color(255, 255, 0, 128));
+                    }
+                }
+                break;
+        }
+    }
+}
+
+// Interactive Animation Demo
+Console.WriteLine("Running Professional Animation System Demo...");
+Console.WriteLine("Use WASD to move, Space to jump, F to attack!");
+
+Raylib.InitWindow(800, 600, "Week 5: Animation System Demo");
+Raylib.SetTargetFPS(60);
+
+AnimatedCharacter character = new AnimatedCharacter(new Vector2(400, 300));
+float moveSpeed = 200.0f;
+
+while (!Raylib.WindowShouldClose())
+{
+    float deltaTime = Raylib.GetFrameTime();
+    
+    // Handle input
+    Vector2 inputVelocity = Vector2.Zero;
+    
+    if (Raylib.IsKeyDown(KeyboardKey.A)) inputVelocity.X -= moveSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.D)) inputVelocity.X += moveSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.W)) inputVelocity.Y -= moveSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.S)) inputVelocity.Y += moveSpeed;
+    
+    character.Velocity = inputVelocity;
+    
+    // Special animations
+    if (Raylib.IsKeyPressed(KeyboardKey.Space))
+    {
+        character.SetAnimation("jump");
+    }
+    
+    if (Raylib.IsKeyPressed(KeyboardKey.F))
+    {
+        character.SetAnimation("attack");
+    }
+    
+    // Update character
+    character.Update(deltaTime);
+    
+    // Draw everything
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(new Color(50, 50, 80, 255));
+    
+    // Title
+    Raylib.DrawText("ANIMATION SYSTEM DEMONSTRATION", 200, 20, 24, Color.White);
+    
+    // Character
+    character.Draw();
+    
+    // Instructions
+    Raylib.DrawText("Controls:", 10, 50, 18, Color.White);
+    Raylib.DrawText("WASD - Move", 10, 75, 16, Color.LightGray);
+    Raylib.DrawText("Space - Jump", 10, 95, 16, Color.LightGray);
+    Raylib.DrawText("F - Attack", 10, 115, 16, Color.LightGray);
+    
+    // Animation info
+    Raylib.DrawText("Animation Features:", 500, 50, 18, Color.White);
+    Raylib.DrawText("• State-based animation switching", 500, 75, 14, Color.LightGray);
+    Raylib.DrawText("• Frame timing and looping", 500, 95, 14, Color.LightGray);
+    Raylib.DrawText("• Visual effects per animation", 500, 115, 14, Color.LightGray);
+    Raylib.DrawText("• Smooth animation transitions", 500, 135, 14, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Professional Animation Features Demonstrated:**
+- 🎬 **Multiple Animation States**: Idle, walk, jump, attack with unique visual patterns
+- ⏱️ **Frame Timing Control**: Different speeds for different animation types
+- 🔄 **State Transitions**: Automatic switching between animations based on player input
+- 🎯 **Visual Effects**: Animation-specific particle effects and visual feedback
+- 📐 **Dynamic Positioning**: Arms and legs that move based on current animation frame
+- 🎮 **Input Integration**: Player controls directly affect animation state
+
+---
+
+## 6. Real Spritesheet Usage with DrawTextureRec
+
+In real game development, you'd load spritesheet images. Here's how the DrawTextureRec function works:
+
+#!csharp
+
+// Real Spritesheet Usage Pattern (when you have image files)
+public class SpritesheetExample
+{
+    // This is how you'd work with real spritesheets in a complete game
+    public static void ShowSpritesheetConcepts()
+    {
+        Console.WriteLine("=== Real Spritesheet Usage Pattern ===");
+        Console.WriteLine();
+        
+        // Step 1: Load the spritesheet texture
+        Console.WriteLine("1. Loading Spritesheet:");
+        Console.WriteLine("   Texture2D spritesheet = Raylib.LoadTexture(\"character_sprites.png\");");
+        Console.WriteLine();
+        
+        // Step 2: Define frame rectangles
+        Console.WriteLine("2. Define Frame Rectangles:");
+        Console.WriteLine("   // Each frame is 32x32 pixels in a 4x4 grid");
+        Console.WriteLine("   Rectangle walkFrame1 = new Rectangle(0, 0, 32, 32);");
+        Console.WriteLine("   Rectangle walkFrame2 = new Rectangle(32, 0, 32, 32);");
+        Console.WriteLine("   Rectangle jumpFrame = new Rectangle(64, 0, 32, 32);");
+        Console.WriteLine();
+        
+        // Step 3: Draw specific frames
+        Console.WriteLine("3. Draw Specific Frames:");
+        Console.WriteLine("   Vector2 position = new Vector2(100, 100);");
+        Console.WriteLine("   Raylib.DrawTextureRec(spritesheet, currentFrame, position, Color.White);");
+        Console.WriteLine();
+        
+        // Step 4: Animation loop
+        Console.WriteLine("4. Animation Loop:");
+        Console.WriteLine("   if (frameTimer >= frameTime) {");
+        Console.WriteLine("       currentFrameIndex = (currentFrameIndex + 1) % totalFrames;");
+        Console.WriteLine("       frameTimer = 0;");
+        Console.WriteLine("   }");
+        Console.WriteLine();
+        
+        // Benefits
+        Console.WriteLine("Benefits of DrawTextureRec:");
+        Console.WriteLine("✅ Draw only the part of texture you need");
+        Console.WriteLine("✅ Perfect for spritesheets and texture atlases");
+        Console.WriteLine("✅ Efficient - one texture holds many sprites");
+        Console.WriteLine("✅ Easy animation frame switching");
+        Console.WriteLine();
+        
+        // Parameters explained
+        Console.WriteLine("DrawTextureRec Parameters:");
+        Console.WriteLine("• Texture2D texture - The loaded spritesheet image");
+        Console.WriteLine("• Rectangle source - Which part of the texture to draw (frame)");
+        Console.WriteLine("• Vector2 position - Where to draw it on screen");
+        Console.WriteLine("• Color tint - Color multiplication (White = no change)");
+    }
+}
+
+SpritesheetExample.ShowSpritesheetConcepts();
+
+#!markdown
+
+**Real-World Spritesheet Workflow:**
+1. **Art Creation**: Artists create spritesheets with consistent frame sizes
+2. **Frame Calculation**: `frameX = (frameIndex % framesPerRow) * frameWidth`
+3. **Animation Data**: JSON/XML files define animation sequences and timing
+4. **Memory Efficiency**: One texture loaded vs hundreds of separate images
+5. **Performance**: GPU processes large textures more efficiently than many small ones
+
+---
+
+## 7. Animation Best Practices & Patterns
+
+### ✅ **Professional Animation Guidelines:**
+
+#### **Timing & Feel**
+- **12 FPS Rule**: 12 frames per second feels smooth for most game animations
+- **Anticipation**: Add wind-up frames before big actions (jump crouch, attack wind-up)
+- **Follow-Through**: Add settling frames after actions (landing, attack recovery)
+- **Easing**: Fast start, slow end (or vice versa) feels more natural than linear
+
+#### **State Management**
+```csharp
+// Professional animation state pattern
+public enum AnimationState 
+{
+    Idle, Walking, Running, Jumping, Falling, Attacking, Hurt, Dead
+}
+
+public void UpdateAnimation(AnimationState newState)
+{
+    if (currentState != newState)
+    {
+        // Transition logic
+        switch (newState)
+        {
+            case AnimationState.Jumping:
+                if (currentState == AnimationState.Walking || currentState == AnimationState.Idle)
+                {
+                    PlayAnimation("jump", false); // Don't loop
+                }
+                break;
+        }
+        currentState = newState;
+    }
+}
+```
+
+#### **Performance Optimization**
+- **Texture Atlasing**: Combine multiple spritesheets into one large texture
+- **Animation Culling**: Don't update animations for off-screen objects
+- **LOD (Level of Detail)**: Use simpler animations for distant objects
+- **Frame Skipping**: Skip animation frames when performance is low
+
+### 🚫 **Common Animation Mistakes:**
+- **Too Fast**: Animations that complete in 2-3 frames feel robotic
+- **No Easing**: Linear movement looks mechanical and unnatural
+- **Poor Transitions**: Jarring switches between animation states
+- **Inconsistent Timing**: Different animations at wildly different speeds
+- **Missing Key Frames**: Skipping important poses in action sequences
+
+---
+
+## 8. Advanced Animation Techniques
+
+### **Interpolation (Tweening)**
+Smooth movement between positions without requiring individual frames:
+
+#!csharp
+
+public static class AnimationMath
+{
+    // Linear interpolation - smooth movement from A to B
+    public static float Lerp(float start, float end, float t)
+    {
+        return start + (end - start) * t;
+    }
+    
+    public static Vector2 Lerp(Vector2 start, Vector2 end, float t)
+    {
+        return new Vector2(
+            Lerp(start.X, end.X, t),
+            Lerp(start.Y, end.Y, t)
+        );
+    }
+    
+    // Easing functions for more natural movement
+    public static float EaseInQuad(float t)
+    {
+        return t * t;
+    }
+    
+    public static float EaseOutQuad(float t)
+    {
+        return 1 - (1 - t) * (1 - t);
+    }
+    
+    public static float EaseInOutQuad(float t)
+    {
+        return t < 0.5f ? 2 * t * t : 1 - (float)Math.Pow(-2 * t + 2, 2) / 2;
+    }
+    
+    // Smooth step - even smoother than linear
+    public static float SmoothStep(float t)
+    {
+        return t * t * (3 - 2 * t);
+    }
+}
+
+// Demonstrate interpolation
+Console.WriteLine("=== Animation Math Demonstration ===");
+
+float startValue = 0;
+float endValue = 100;
+
+Console.WriteLine("Linear vs Eased Movement (0 to 100):");
+Console.WriteLine("Time | Linear | EaseOut | Smooth");
+Console.WriteLine("-----|--------|---------|-------");
+
+for (float t = 0; t <= 1.0f; t += 0.2f)
+{
+    float linear = AnimationMath.Lerp(startValue, endValue, t);
+    float easeOut = AnimationMath.Lerp(startValue, endValue, AnimationMath.EaseOutQuad(t));
+    float smooth = AnimationMath.Lerp(startValue, endValue, AnimationMath.SmoothStep(t));
+    
+    Console.WriteLine($"{t:F1}  | {linear:F1}    | {easeOut:F1}     | {smooth:F1}");
+}
+
+Console.WriteLine();
+Console.WriteLine("Notice how easing creates more natural-feeling movement!");
+
+#!markdown
+
+**Interpolation Applications:**
+- **UI Animations**: Smooth menu transitions and button effects
+- **Camera Movement**: Following players without jerky movement
+- **Object Movement**: Smooth position, rotation, and scale changes
+- **Visual Effects**: Fade in/out, color transitions, size changes
+
+---
+
+## 9. Challenge: Build Your Own Animation Systems
+
+Time to practice! These challenges will test your animation implementation skills:
+
+### Challenge 1: Multi-State Character Controller 🤖
+**Your Task**: Create a character with multiple animation states and smooth transitions.
+
+**Requirements:**
+- **Animation States**: Idle, Walk, Run, Jump, Attack, Hurt
+- **State Transitions**: Logical flow between states (can't jump while attacking)
+- **Input Handling**: WASD movement, Space jump, F attack
+- **Visual Feedback**: Each state has distinct visual appearance
+- **Timing Control**: Different frame rates for different actions
+
+**Advanced Features:**
+- **Combo System**: Chain attacks together
+- **Animation Blending**: Smooth transitions between states
+- **Direction Facing**: Character faces movement direction
+- **Animation Events**: Trigger effects at specific frames
+
+#!csharp
+
+public enum CharacterState
+{
+    // TODO: Define your character states
+}
+
+public class AdvancedCharacter
+{
+    // TODO: Add state management, animations, and input handling
+    
+    public void Update(float deltaTime)
+    {
+        // TODO: Handle input, update animations, manage state transitions
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render character based on current state and animation
+    }
+    
+    private void HandleInput()
+    {
+        // TODO: Process player input and trigger state changes
+    }
+    
+    private void UpdateAnimations(float deltaTime)
+    {
+        // TODO: Update current animation and handle frame timing
+    }
+    
+    private bool CanTransitionTo(CharacterState newState)
+    {
+        // TODO: Define valid state transition rules
+        return false;
+    }
+    
+    private void SetState(CharacterState newState)
+    {
+        // TODO: Change state and start appropriate animation
+    }
+}
+
+// Test framework (uncomment to test):
+/*
+Raylib.InitWindow(800, 600, "Challenge 1: Multi-State Character");
+Raylib.SetTargetFPS(60);
+
+AdvancedCharacter character = new AdvancedCharacter();
+
+while (!Raylib.WindowShouldClose())
+{
+    character.Update(Raylib.GetFrameTime());
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkGray);
+    character.Draw();
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+*/
+
+#!markdown
+
+**Success Criteria:**
+- Smooth transitions between all animation states
+- Responsive input handling with immediate visual feedback
+- Logical state flow (no impossible transitions)
+- Professional timing and visual polish
+- Clear visual distinction between each state
+
+---
+
+### Challenge 2: Particle Animation System ✨
+**Your Task**: Create an animated particle system with multiple effect types.
+
+**Requirements:**
+- **Particle Types**: Fire, Smoke, Sparkles, Explosion, Rain
+- **Animation Properties**: Position, velocity, size, color, life span
+- **Visual Effects**: Particles that grow, shrink, fade, and change color over time
+- **Emitter System**: Click to spawn different particle effects
+- **Performance**: Handle 100+ particles smoothly
+
+**Particle Behaviors:**
+- **Fire**: Particles rise, flicker, and fade to red/orange
+- **Smoke**: Particles drift upward, expand, and fade to gray
+- **Sparkles**: Particles twinkle, change color, and disappear
+- **Explosion**: Particles burst outward, then fall with gravity
+- **Rain**: Particles fall downward at constant speed
+
+#!csharp
+
+public class Particle
+{
+    // TODO: Add properties for position, velocity, life, size, color
+    
+    public void Update(float deltaTime)
+    {
+        // TODO: Update particle physics and visual properties
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render particle with current properties
+    }
+    
+    public bool IsAlive()
+    {
+        // TODO: Check if particle should be removed
+        return false;
+    }
+}
+
+public enum ParticleType
+{
+    // TODO: Define different particle effect types
+}
+
+public class ParticleSystem
+{
+    // TODO: Manage collections of particles and emitters
+    
+    public void EmitParticles(Vector2 position, ParticleType type, int count)
+    {
+        // TODO: Create new particles at specified location
+    }
+    
+    public void Update(float deltaTime)
+    {
+        // TODO: Update all particles and remove dead ones
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render all active particles
+    }
+    
+    private Particle CreateParticle(Vector2 position, ParticleType type)
+    {
+        // TODO: Factory method to create particles with type-specific properties
+        return null;
+    }
+}
+
+// Advanced particle test:
+/*
+Console.WriteLine("Particle Animation System - Professional Implementation");
+Console.WriteLine("Click to spawn different particle effects:");
+Console.WriteLine("- Left Click: Fire");
+Console.WriteLine("- Right Click: Explosion");
+Console.WriteLine("- Middle Click: Sparkles");
+*/
+
+#!markdown
+
+**Advanced Features:**
+- **Multiple Emitters**: Different spawn patterns (burst, stream, area)
+- **Physics Integration**: Gravity, wind, collision with ground
+- **Visual Variation**: Random size, speed, and color within ranges
+- **Optimization**: Object pooling to reuse particle objects
+- **Screen Wrapping**: Particles that wrap around screen edges
+
+---
+
+### Challenge 3: UI Animation Framework 🎨
+**Your Task**: Create a comprehensive UI animation system for menus and interfaces.
+
+**Requirements:**
+- **Animation Types**: Fade, Slide, Scale, Rotate, Color transitions
+- **Easing Functions**: Linear, ease-in, ease-out, ease-in-out, bounce
+- **UI Elements**: Buttons, panels, text, progress bars
+- **Sequencing**: Chain animations together in sequences
+- **Interactive**: Hover effects, click animations, state changes
+
+**Animation Framework:**
+- **Tween System**: Animate any numeric property over time
+- **Animation Queue**: Multiple animations on the same object
+- **Callbacks**: Execute code when animations complete
+- **Performance**: Smooth 60fps animation with proper timing
+
+#!csharp
+
+public class UITween
+{
+    // TODO: Create tweening system for smooth property animation
+    
+    public void Update(float deltaTime)
+    {
+        // TODO: Update tween progress and apply easing
+    }
+    
+    public bool IsComplete()
+    {
+        // TODO: Check if animation has finished
+        return false;
+    }
+}
+
+public class AnimatedUIElement
+{
+    // TODO: UI element with animation capabilities
+    
+    public void AnimateTo(Vector2 targetPosition, float duration, EasingType easing)
+    {
+        // TODO: Create position animation
+    }
+    
+    public void FadeTo(float targetAlpha, float duration)
+    {
+        // TODO: Create fade animation
+    }
+    
+    public void ScaleTo(float targetScale, float duration)
+    {
+        // TODO: Create scale animation
+    }
+    
+    public void Update(float deltaTime)
+    {
+        // TODO: Update all active animations
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render with current animated properties
+    }
+}
+
+public enum EasingType
+{
+    // TODO: Define easing function types
+}
+
+public class UIAnimationDemo
+{
+    // TODO: Demonstrate complete UI animation system
+    
+    public void Update()
+    {
+        // TODO: Handle interactions and update animations
+    }
+    
+    public void Draw()
+    {
+        // TODO: Render animated interface
+    }
+}
+
+// UI Animation showcase:
+/*
+Console.WriteLine("UI Animation Framework - Complete Implementation");
+Console.WriteLine("Features to implement:");
+Console.WriteLine("• Smooth property tweening");
+Console.WriteLine("• Multiple easing functions");
+Console.WriteLine("• Animation sequencing");
+Console.WriteLine("• Interactive hover effects");
+Console.WriteLine("• Professional menu transitions");
+*/
+
+#!markdown
+
+**Master-Level Success Criteria:**
+- **Smooth Performance**: 60fps animation with complex UI layouts
+- **Professional Feel**: Easing functions that feel natural and polished
+- **Interactive Feedback**: Immediate response to user interactions
+- **Animation Sequencing**: Complex multi-step animation sequences
+- **Reusable Framework**: System that works for any UI element type
+
+---
+
+## 10. Reflection: Animation in Game Development
+
+After completing these challenges, consider:
+
+1. **Player Experience**: How does smooth animation improve game feel?
+2. **Performance Impact**: What's the balance between visual quality and frame rate?
+3. **State Management**: How do animation systems integrate with game logic?
+4. **Visual Communication**: How does animation convey information to players?
+
+**Real-World Applications:**
+- **AAA Games**: Complex animation blending and state machines
+- **Mobile Games**: Optimized animations for battery life and performance
+- **UI/UX Design**: Smooth transitions that guide user attention
+- **Web Development**: CSS animations and JavaScript tweening libraries
+
+---
+
+## 11. What's Next?
+
+In **Session 28**, we'll add the final sensory layer with **Audio Systems**:
+- 🔊 **Sound Effects** with LoadSound and PlaySound
+- 🎵 **Background Music** and audio management
+- 🎚️ **Volume Controls** and audio mixing
+- 🎪 **Dynamic Audio** that responds to game events
+
+Your animated characters will come alive with professional audio design!
+
+---
+
+## Key Concepts Mastered:
+- **Spritesheet Animation**: Frame-based character animation systems
+- **Animation States**: Professional state management for complex behaviors
+- **Frame Timing**: Precise control over animation speed and feel
+- **Visual Effects**: Particle systems and dynamic visual feedback
+- **Interpolation**: Smooth movement and transitions using math
+- **Performance**: Efficient animation systems that maintain smooth frame rates
+- **Professional Patterns**: Industry-standard animation architecture
+
+Excellent work mastering animation systems! Your games now have the visual polish that keeps players engaged! 🎬🏆

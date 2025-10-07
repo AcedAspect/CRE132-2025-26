@@ -1,0 +1,682 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Arrays vs Lists
+
+## 1. Recap: The Problem We Need to Solve
+
+Recently, we learned how to create classes and objects. We could make individual players, enemies, and items. But what happens when we need to manage **many** objects at once?
+
+Imagine a game with:
+-  Multiple players (2-4 characters)
+-  Dozens of enemies (20-50 monsters)
+-  Hundreds of bullets (player shots, enemy projectiles)
+-  Various collectibles (coins, power-ups, health packs)
+
+Creating individual variables like `enemy1`, `enemy2`, `enemy3`... `enemy50` would be a nightmare! We need a better way to store and manage multiple objects of the same type.
+
+The solution: **Collections** - containers that can hold multiple objects.
+
+---
+
+## 2. Meet Your First Collection: Arrays
+
+An **array** is like a numbered row of boxes, each holding one item. Think of a car park with numbered spaces - each space can hold exactly one car.
+
+### Array Characteristics:
+- **Fixed Size**: Once created, you can't add or remove spaces
+- **Indexed**: Each item has a number (starting from 0)
+- **Same Type**: All items must be the same data type
+- **Fast Access**: You can instantly get any item if you know its number
+
+#!csharp
+
+// Creating arrays - different ways
+int[] scores = new int[5];        // Empty array with 5 spaces
+string[] names = {"Alice", "Bob", "Charlie"};  // Array with initial values
+float[] positions = new float[] {10.5f, 25.0f, 100.2f};  // Another way
+
+// Accessing array elements (remember: counting starts at 0!)
+Console.WriteLine($"First name: {names[0]}");   // Alice
+Console.WriteLine($"Second name: {names[1]}");  // Bob
+Console.WriteLine($"Third name: {names[2]}");   // Charlie
+
+// Modifying array elements
+scores[0] = 100;
+scores[1] = 85;
+scores[2] = 92;
+
+Console.WriteLine($"Array length: {scores.Length}");
+Console.WriteLine($"First score: {scores[0]}");
+
+// Looping through arrays
+Console.WriteLine("\nAll scores:");
+for (int i = 0; i < scores.Length; i++)
+{
+    Console.WriteLine($"Score {i + 1}: {scores[i]}");
+}
+
+#!markdown
+
+**Key Point**: Arrays are perfect when you know exactly how many items you need and that number won't change.
+
+---
+
+## 3. Meet Your Second Collection: Lists
+
+A **List** is like a magical backpack that can grow and shrink as needed. You can add new items, remove old ones, and it adjusts its size automatically.
+
+### List Characteristics:
+- **Dynamic Size**: Can grow and shrink during the program
+- **Indexed**: Each item still has a number (starting from 0)
+- **Same Type**: All items must be the same data type
+- **Flexible**: Easy to add, remove, or insert items
+
+#!csharp
+
+using System.Collections.Generic;
+
+// Creating Lists - must specify the type in angle brackets
+List<string> playerNames = new List<string>();
+List<int> highScores = new List<int> {500, 750, 1200};  // With initial values
+
+// Adding items to lists
+playerNames.Add("Alice");
+playerNames.Add("Bob");
+playerNames.Add("Charlie");
+
+Console.WriteLine($"List count: {playerNames.Count}");
+
+// Accessing list elements (same as arrays)
+Console.WriteLine($"First player: {playerNames[0]}");
+
+// Adding more items
+playerNames.Add("Diana");
+playerNames.Add("Eve");
+
+Console.WriteLine($"New count: {playerNames.Count}");
+
+// Removing items
+playerNames.Remove("Bob");  // Remove by value
+playerNames.RemoveAt(0);    // Remove by index (removes Alice)
+
+Console.WriteLine("\nRemaining players:");
+for (int i = 0; i < playerNames.Count; i++)
+{
+    Console.WriteLine($"{i + 1}: {playerNames[i]}");
+}
+
+// Check if item exists
+if (playerNames.Contains("Charlie"))
+{
+    Console.WriteLine("Charlie is still in the game!");
+}
+
+#!markdown
+
+**Key Point**: Lists are perfect when you don't know how many items you'll need, or when items are frequently added/removed.
+
+---
+
+## 4. Arrays vs Lists: When to Use Which?
+
+| **Scenario** | **Use Array** | **Use List** | **Why?** |
+|--------------|---------------|--------------|----------|
+| **Player inventory (limited slots)** | ✅ `Item[30]` | ❌ | Fixed 30 slots, never changes |
+| **Enemies in level** | ❌ | ✅ `List<Enemy>` | Enemies spawn/die dynamically |
+| **Bullets fired** | ❌ | ✅ `List<Bullet>` | Bullets created/destroyed constantly |
+| **RGB color values** | ✅ `int[3]` | ❌ | Always exactly 3 values (Red, Green, Blue) |
+| **High score table** | ✅ `int[10]` | ❌ | Fixed top 10 scores |
+| **Chat messages** | ❌ | ✅ `List<string>` | Messages added constantly |
+
+**Rule of Thumb:**
+- **Fixed, known size** → Array
+- **Dynamic, changing size** → List
+
+---
+
+## 5. Text Game Example: Managing a Hero Party
+
+Let's create a text-based RPG that manages multiple heroes using both arrays and lists:
+
+#!csharp
+
+using System.Collections.Generic;
+
+// Hero class from previous session (simplified)
+public class Hero
+{
+    public string Name;
+    public int Health;
+    public int Level;
+    
+    public Hero(string name)
+    {
+        Name = name;
+        Health = 100;
+        Level = 1;
+    }
+    
+    public void DisplayInfo()
+    {
+        Console.WriteLine($"{Name} - Level {Level}, Health: {Health}");
+    }
+    
+    public void TakeDamage(int damage)
+    {
+        Health -= damage;
+        if (Health < 0) Health = 0;
+    }
+    
+    public bool IsAlive()
+    {
+        return Health > 0;
+    }
+}
+
+// Combat events for simulation (this uses an array - fixed events)
+string[] combatEvents = {"battle", "trap", "rest", "treasure", "boss"};
+
+// Create our hero party using a List (heroes can join/leave)
+List<Hero> party = new List<Hero>();
+party.Add(new Hero("Warrior"));
+party.Add(new Hero("Mage"));
+party.Add(new Hero("Rogue"));
+
+Console.WriteLine("=== Adventure Begins ===");
+Console.WriteLine($"Party size: {party.Count}");
+
+foreach (Hero hero in party)
+{
+    hero.DisplayInfo();
+}
+
+Console.WriteLine("\n--- Adventure Events ---");
+
+// Simulate adventure events
+for (int i = 0; i < combatEvents.Length; i++)
+{
+    string eventType = combatEvents[i];
+    Console.WriteLine($"\nEvent {i + 1}: {eventType.ToUpper()}!");
+    
+    switch (eventType)
+    {
+        case "battle":
+            Console.WriteLine("The party fights monsters!");
+            foreach (Hero hero in party)
+            {
+                if (hero.IsAlive())
+                {
+                    hero.TakeDamage(15);
+                    Console.WriteLine($"{hero.Name} takes 15 damage");
+                }
+            }
+            break;
+            
+        case "trap":
+            Console.WriteLine("A trap springs!");
+            if (party.Count > 0)
+            {
+                // Random hero takes damage (using array indexing on List)
+                int randomIndex = new Random().Next(party.Count);
+                party[randomIndex].TakeDamage(25);
+                Console.WriteLine($"{party[randomIndex].Name} triggered the trap!");
+            }
+            break;
+            
+        case "rest":
+            Console.WriteLine("The party rests at a campfire.");
+            foreach (Hero hero in party)
+            {
+                hero.Health += 30;
+                if (hero.Health > 100) hero.Health = 100;
+                Console.WriteLine($"{hero.Name} recovers health");
+            }
+            break;
+            
+        case "treasure":
+            Console.WriteLine("Treasure found! All heroes gain experience!");
+            foreach (Hero hero in party)
+            {
+                hero.Level++;
+                Console.WriteLine($"{hero.Name} is now level {hero.Level}");
+            }
+            break;
+            
+        case "boss":
+            Console.WriteLine("BOSS BATTLE! Heavy damage to all!");
+            foreach (Hero hero in party)
+            {
+                hero.TakeDamage(40);
+                Console.WriteLine($"{hero.Name} takes 40 damage from boss");
+            }
+            break;
+    }
+    
+    // Remove defeated heroes (this is why we use List - dynamic removal!)
+    for (int j = party.Count - 1; j >= 0; j--)
+    {
+        if (!party[j].IsAlive())
+        {
+            Console.WriteLine($" {party[j].Name} has fallen and leaves the party!");
+            party.RemoveAt(j);
+        }
+    }
+    
+    if (party.Count == 0)
+    {
+        Console.WriteLine("\n All heroes have fallen! Game Over!");
+        break;
+    }
+}
+
+Console.WriteLine("\n--- Final Party Status ---");
+Console.WriteLine($"Surviving heroes: {party.Count}");
+foreach (Hero hero in party)
+{
+    hero.DisplayInfo();
+}
+
+#!markdown
+
+**Notice the Power of Lists**: We could easily remove defeated heroes from the party! Try doing that with a fixed array - it's much more complicated.
+
+**Smart Usage**: We used an array for `combatEvents` (fixed sequence) and a List for `party` (dynamic membership).
+
+---
+
+## 6. Raylib Example: Managing Multiple Visual Objects
+
+Now let's see collections in action with Raylib graphics. We'll create a simple game with multiple moving objects:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+using System.Collections.Generic;
+
+// Floating Orb class for our visual example
+public class FloatingOrb
+{
+    public float X, Y;
+    public float SpeedX, SpeedY;
+    public Color OrbColor;
+    public float Radius;
+    public bool IsActive;
+    
+    public FloatingOrb(float x, float y, Color color)
+    {
+        X = x;
+        Y = y;
+        OrbColor = color;
+        Radius = Raylib.GetRandomValue(10, 25);
+        SpeedX = Raylib.GetRandomValue(-3, 3);
+        SpeedY = Raylib.GetRandomValue(-3, 3);
+        IsActive = true;
+    }
+    
+    public void Update()
+    {
+        // Move the orb
+        X += SpeedX;
+        Y += SpeedY;
+        
+        // Bounce off screen edges
+        if (X <= Radius || X >= 800 - Radius)
+        {
+            SpeedX = -SpeedX;
+        }
+        if (Y <= Radius || Y >= 600 - Radius)
+        {
+            SpeedY = -SpeedY;
+        }
+        
+        // Keep orb on screen
+        if (X < Radius) X = Radius;
+        if (X > 800 - Radius) X = 800 - Radius;
+        if (Y < Radius) Y = Radius;
+        if (Y > 600 - Radius) Y = 600 - Radius;
+    }
+    
+    public void Draw()
+    {
+        if (IsActive)
+        {
+            Raylib.DrawCircle((int)X, (int)Y, Radius, OrbColor);
+            // Draw a subtle border
+            Raylib.DrawCircleLines((int)X, (int)Y, Radius, Color.White);
+        }
+    }
+    
+    public bool IsClicked(float mouseX, float mouseY)
+    {
+        float distance = (float)Math.Sqrt((X - mouseX) * (X - mouseX) + (Y - mouseY) * (Y - mouseY));
+        return distance <= Radius;
+    }
+}
+
+// Create a List of orbs (dynamic - we can add/remove orbs during gameplay)
+List<FloatingOrb> orbs = new List<FloatingOrb>();
+
+// Spawn some initial orbs
+Color[] orbColors = {Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Purple, Color.Orange};
+for (int i = 0; i < 8; i++)
+{
+    float x = Raylib.GetRandomValue(50, 750);
+    float y = Raylib.GetRandomValue(50, 550);
+    Color randomColor = orbColors[Raylib.GetRandomValue(0, orbColors.Length - 1)];
+    orbs.Add(new FloatingOrb(x, y, randomColor));
+}
+
+int score = 0;
+Raylib.InitWindow(800, 600, "Orb Collector - Lists in Action!");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Update all orbs
+    foreach (FloatingOrb orb in orbs)
+    {
+        orb.Update();
+    }
+    
+    // Check for mouse clicks on orbs
+    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+    {
+        float mouseX = Raylib.GetMouseX();
+        float mouseY = Raylib.GetMouseY();
+        
+        // Check if any orb was clicked (iterate backwards for safe removal)
+        for (int i = orbs.Count - 1; i >= 0; i--)
+        {
+            if (orbs[i].IsClicked(mouseX, mouseY))
+            {
+                orbs.RemoveAt(i);  // Remove clicked orb from List
+                score += 10;
+                break; // Only remove one orb per click
+            }
+        }
+    }
+    
+    // Add new orb occasionally
+    if (Raylib.GetRandomValue(1, 120) == 1 && orbs.Count < 15)
+    {
+        float x = Raylib.GetRandomValue(50, 750);
+        float y = Raylib.GetRandomValue(50, 550);
+        Color randomColor = orbColors[Raylib.GetRandomValue(0, orbColors.Length - 1)];
+        orbs.Add(new FloatingOrb(x, y, randomColor));
+    }
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // Draw all orbs
+    foreach (FloatingOrb orb in orbs)
+    {
+        orb.Draw();
+    }
+    
+    // Draw UI
+    Raylib.DrawText($"Score: {score}", 10, 10, 24, Color.White);
+    Raylib.DrawText($"Orbs: {orbs.Count}", 10, 40, 20, Color.White);
+    Raylib.DrawText("Click orbs to collect them!", 10, 70, 16, Color.LightGray);
+    Raylib.DrawText("New orbs spawn randomly", 10, 90, 16, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Amazing!** Notice how we:
+- ✅ **Used List** for orbs (perfect for adding/removing during gameplay)
+- ✅ **Used Array** for colors (fixed set of color options)
+- ✅ **Dynamically managed** objects (orbs are created and destroyed)
+- ✅ **Iterated safely** when removing items (backwards loop)
+
+This is exactly how professional games manage bullets, enemies, collectibles, and particles!
+
+---
+
+## 7. Safe Removal Pattern
+
+When removing items from a List while iterating, **always go backwards**:
+
+```csharp
+// ❌ DANGEROUS - Can skip elements
+for (int i = 0; i < list.Count; i++)
+{
+    if (shouldRemove) 
+        list.RemoveAt(i); // This shifts all elements!
+}
+
+// ✅ SAFE - Always works correctly
+for (int i = list.Count - 1; i >= 0; i--)
+{
+    if (shouldRemove) 
+        list.RemoveAt(i); // Safe to remove from end
+}
+```
+
+**Why?** When you remove an element, all elements after it shift down. Going backwards avoids this problem.
+
+---
+
+## 8. Challenge: Create Your Own Collection-Based Systems
+
+Your turn! These challenges will test your understanding of arrays, lists, and when to use each:
+
+### Challenge 1: Inventory System 
+**Your Task**: Create an inventory system that uses both arrays and lists appropriately.
+
+**Requirements:**
+- Create an `Item` class with properties: `Name` (string), `Quantity` (int), `Value` (int)
+- **Array**: Fixed equipment slots (exactly 4 items: weapon, armor, boots, accessory)
+- **List**: Dynamic backpack storage (can add/remove items freely)
+- **Methods**: `EquipItem()`, `UnequipItem()`, `AddToBackpack()`, `RemoveFromBackpack()`, `DisplayInventory()`
+
+**Your equipment slots should be**:
+```csharp
+// Use array for fixed equipment slots
+Item[] equipment = new Item[4]; // [0]=weapon, [1]=armor, [2]=boots, [3]=accessory
+```
+
+#!csharp
+
+using System.Collections.Generic;
+
+// TODO: Create your Item class here
+
+// TODO: Create your inventory management code here
+
+// Test your inventory system (don't modify this part):
+Console.WriteLine("=== Testing Inventory System ===");
+
+// Test items
+Item sword = new Item("Iron Sword", 1, 100);
+Item armor = new Item("Leather Armor", 1, 80);
+Item potion = new Item("Health Potion", 5, 25);
+Item gold = new Item("Gold Coins", 150, 1);
+
+// Your inventory system should handle these operations:
+// 1. Add items to backpack
+// 2. Equip items to equipment slots
+// 3. Display current inventory
+// 4. Remove items from backpack
+
+Console.WriteLine("Adding items to backpack...");
+// AddToBackpack(sword);
+// AddToBackpack(armor);
+// AddToBackpack(potion);
+// AddToBackpack(gold);
+
+Console.WriteLine("\nEquipping items...");
+// EquipItem(sword, 0);  // Equip sword to weapon slot
+// EquipItem(armor, 1);  // Equip armor to armor slot
+
+Console.WriteLine("\nCurrent inventory:");
+// DisplayInventory();
+
+#!markdown
+
+**Expected Behavior:**
+- Equipment slots should show what's equipped in each position
+- Backpack should show all stored items with quantities
+- Items should move properly between backpack and equipment
+- System should prevent invalid operations (like removing non-existent items)
+
+---
+
+### Challenge 2: Enemy Wave System 
+**Your Task**: Create a wave-based enemy system using Lists.
+
+**Requirements:**
+- Create an `Enemy` class with properties: `Name`, `Health`, `X`, `Y`, `IsAlive`
+- Use a `List<Enemy>` to manage active enemies
+- **Methods**: `SpawnWave()`, `UpdateEnemies()`, `RemoveDefeatedEnemies()`, `DisplayWaveStatus()`
+- Enemies should "move" by changing their X position each update
+- Remove enemies when their health reaches 0
+
+#!csharp
+
+using System.Collections.Generic;
+
+// TODO: Create your Enemy class here
+
+// TODO: Create your wave management system here
+
+// Test your wave system:
+Console.WriteLine("=== Testing Enemy Wave System ===");
+
+// Simulate 3 waves of enemies
+for (int wave = 1; wave <= 3; wave++)
+{
+    Console.WriteLine($"\n--- WAVE {wave} ---");
+    
+    // SpawnWave(wave * 2); // Spawn 2, then 4, then 6 enemies
+    
+    // Simulate 5 combat rounds
+    for (int round = 1; round <= 5; round++)
+    {
+        Console.WriteLine($"\nRound {round}:");
+        
+        // UpdateEnemies(); // Move enemies and simulate damage
+        // RemoveDefeatedEnemies(); // Clean up defeated enemies
+        // DisplayWaveStatus(); // Show current status
+        
+        // if (AllEnemiesDefeated()) break;
+    }
+}
+
+#!markdown
+
+---
+
+### Challenge 3: Visual Particle System ✨
+**Your Task**: Create a visual particle effect system using Raylib and Lists.
+
+**Requirements:**
+- Create a `Particle` class with properties: `X`, `Y`, `SpeedX`, `SpeedY`, `Life`, `Color`
+- Use a `List<Particle>` to manage active particles  
+- **Methods**: `Update()` (move and age particle), `Draw()`, `IsExpired()` (when life <= 0)
+- Particles should spawn when mouse is clicked
+- Remove expired particles automatically
+
+**Particle Behavior:**
+- Start with random speed and direction
+- Gradually slow down over time
+- Fade out as they age
+- Disappear when life reaches 0
+
+#!csharp
+
+// TODO: Create your Particle class here
+
+// TODO: Create your particle system here
+
+// Raylib test framework:
+Raylib.InitWindow(800, 600, "Challenge 3: Particle System");
+Raylib.SetTargetFPS(60);
+
+while (!Raylib.WindowShouldClose())
+{
+    // Handle mouse clicks to spawn particles
+    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+    {
+        float mouseX = Raylib.GetMouseX();
+        float mouseY = Raylib.GetMouseY();
+        
+        // TODO: Spawn 10-15 particles at mouse position
+    }
+    
+    // TODO: Update all particles
+    // TODO: Remove expired particles
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    
+    // TODO: Draw all particles
+    
+    Raylib.DrawText("Click to create particles!", 10, 10, 20, Color.White);
+    // Raylib.DrawText($"Active particles: {particles.Count}", 10, 35, 16, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+**Success Criteria:**
+- Clicking creates a burst of colorful particles at mouse position
+- Particles move and fade out over time
+- Expired particles are automatically removed from the list
+- Performance stays smooth even with many particles
+
+**Hints:**
+- Use `List<Particle>` for dynamic particle management
+- Update life by subtracting a small amount each frame (e.g., `life -= 1.0f`)
+- Use `Color.Fade()` to make particles transparent as they age
+- Remember to iterate backwards when removing expired particles!
+
+---
+
+## 9. Challenge Reflection
+
+After completing the challenges, consider:
+
+1. **When did you choose arrays vs lists? Why?**
+2. **What challenges did you face with adding/removing items dynamically?**
+3. **How do collections make managing multiple objects easier than individual variables?**
+4. **Can you see how this applies to real game systems (bullets, enemies, UI elements)?**
+
+---
+
+## 10. What's Next?
+
+In our final session of Week 3 (Session 18), we'll combine everything  learned:
+- **Classes & Objects** (Session 16)
+- **Arrays & Lists** (Session 17)  
+- **Multiple Interactive Objects** with collision detection and game mechanics
+
+We'll create a complete mini-game with player movement, enemy AI, collectible items, and visual effects - putting all your OOP knowledge into practice!
+
+---
+
+## Key Concepts Learned:
+- **Arrays**: Fixed-size collections for known quantities
+- **Lists**: Dynamic collections for changing quantities  
+- **When to use which**: Based on whether size changes during execution
+- **Safe removal**: Always iterate backwards when removing during iteration
+- **Real-world application**: How professional games manage multiple objects
+- **Collection patterns**: Adding, removing, updating, and drawing multiple objects
+
+Excellent work mastering data collections! You now have the tools to manage complex game systems with ease! 

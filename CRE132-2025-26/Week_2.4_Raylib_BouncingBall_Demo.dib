@@ -1,0 +1,409 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!markdown
+
+# Week 3, Session 15: Raylib - Organizing with Methods
+
+## 1. Recap: What We've Learned So Far
+
+Over the past two weeks, we've covered quite a bit of ground:
+- We can create variables and use conditional logic
+- We can loop through data and draw patterns
+- We can get keyboard input and move objects around the screen
+- We've learned about methods to organize our code into reusable blocks
+
+Now it's time to put it all together and create more organised, professional-looking game code.
+
+---
+
+## 2. The Problem: Messy Main Methods
+
+Let's look at a typical piece of Raylib code we might have written in previous sessions. Notice how everything is crammed into the main game loop:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+// A messy example - everything in one place
+Raylib.InitWindow(800, 600, "Messy Code Example");
+
+float playerX = 400;
+float playerY = 300;
+float ballX = 100;
+float ballY = 100;
+float ballSpeedX = 0.2f;
+float ballSpeedY = 0.3f;
+float playerSpeed = 0.5f;
+
+while (!Raylib.WindowShouldClose())
+{
+    // Input handling
+    if (Raylib.IsKeyDown(KeyboardKey.Left)) playerX -= playerSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.Right)) playerX += playerSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.Up)) playerY -= playerSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.Down)) playerY += playerSpeed;
+    
+    // Ball movement
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
+    
+    // Ball bouncing
+    if (ballX <= 0 || ballX >= 800) ballSpeedX = -ballSpeedX;
+    if (ballY <= 0 || ballY >= 600) ballSpeedY = -ballSpeedY;
+    
+    // Drawing
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkBlue);
+    
+    Raylib.DrawCircle((int)playerX, (int)playerY, 20, Color.White);
+    Raylib.DrawCircle((int)ballX, (int)ballY, 15, Color.Red);
+    Raylib.DrawText("Use arrow keys to move", 10, 10, 20, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+This code works, but it's getting difficult to read and understand. All the logic is mixed together in one big block. What if we want to add more features? The code will become even more cluttered.
+
+---
+
+## 3. The Solution: Organising with Methods
+
+Professional game developers organise their code by breaking it into logical pieces. Let's take the same example and restructure it using methods:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+// Global variables for game state
+float playerX = 400;
+float playerY = 300; 
+float ballX = 100; 
+float ballY = 100; 
+float ballSpeedX = 0.2f; 
+float ballSpeedY = 0.3f;
+float playerSpeed = 0.5f;
+
+// Method to handle all input
+void HandleInput()
+{
+    if (Raylib.IsKeyDown(KeyboardKey.Left)) playerX -= playerSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.Right)) playerX += playerSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.Up)) playerY -= playerSpeed;
+    if (Raylib.IsKeyDown(KeyboardKey.Down)) playerY += playerSpeed;
+}
+
+// Method to update game logic
+void UpdateGame()
+{
+    // Ball movement
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
+    
+    // Ball bouncing
+    if (ballX <= 0 || ballX >= 800) ballSpeedX = -ballSpeedX;
+    if (ballY <= 0 || ballY >= 600) ballSpeedY = -ballSpeedY;
+}
+
+
+// Method to handle all drawing
+void DrawGame()
+{
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkBlue);
+    
+    // Draw player
+    Raylib.DrawCircle((int)playerX, (int)playerY, 20, Color.White);
+    
+    // Draw ball
+    Raylib.DrawCircle((int)ballX, (int)ballY, 15, Color.Red);
+    
+    // Draw UI
+    Raylib.DrawText("Use arrow keys to move", 10, 10, 20, Color.LightGray);
+    
+    Raylib.EndDrawing();
+}
+
+// Clean main game loop
+Raylib.InitWindow(800, 600, "Organized Code Example");
+
+while (!Raylib.WindowShouldClose())
+{
+    HandleInput();
+    UpdateGame();
+    DrawGame();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+Much cleaner! Now our main game loop is easy to read and understand:
+1. **HandleInput()** - Deal with player controls
+2. **UpdateGame()** - Update game logic and physics
+3. **DrawGame()** - Render everything to the screen
+
+This is the standard pattern used in professional game development.
+
+
+---
+
+## 4. Benefits of This Organisation
+
+### Easier to Read
+Each method has a clear, single purpose. If you want to change how input works, you only look at the `HandleInput()` method.
+
+### Easier to Debug
+If something's wrong with the graphics, you know the problem is in `DrawGame()`. If movement feels wrong, check `UpdateGame()`.
+
+### Easier to Expand
+Want to add enemies? Create an `UpdateEnemies()` method and call it from `UpdateGame()`. Want to add a pause menu? Add a `DrawUI()` method.
+
+### Real-World Practice
+This is exactly how professional games are structured, just with many more methods and files.
+
+---
+
+## 5. Method Parameters: Making Methods More Flexible
+
+Let's make our code even better by using parameters. Instead of relying on global variables, we can pass values to our methods:
+
+#!csharp
+
+using Raylib_cs;
+
+// Method that draws a player at any position
+static void DrawPlayer(float x, float y, Color color)
+{
+    Raylib.DrawCircle((int)x, (int)y, 20, color);
+}
+
+// Method that draws multiple enemies
+static void DrawEnemies(float[] enemyX, float[] enemyY)
+{
+    for (int i = 0; i < enemyX.Length; i++)
+    {
+        Raylib.DrawCircle((int)enemyX[i], (int)enemyY[i], 15, Color.RED);
+    }
+}
+
+
+// Example using these flexible methods
+Raylib.InitWindow(800, 600, "Flexible Methods Example");
+
+float playerX = 400, playerY = 300;
+float[] enemyX = {100, 700, 150};
+float[] enemyY = {100, 500, 400};
+
+while (!Raylib.WindowShouldClose())
+{
+    // Simple input
+    if (Raylib.IsKeyDown(KeyboardKey.Left)) playerX -= 3;
+    if (Raylib.IsKeyDown(KeyboardKey.Right)) playerX += 3;
+    
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.DarkGreen);
+    
+    // Use our flexible methods
+    DrawPlayer(playerX, playerY, Color.BLUE);
+    DrawEnemies(enemyX, enemyY);
+    
+    Raylib.DrawText("Left/Right arrows to move", 10, 10, 20, Color.WHITE);
+    
+    Raylib.EndDrawing();
+}
+
+Raylib.CloseWindow();
+
+#!markdown
+
+---
+
+## 6. Text Game Example: Refactored Adventure
+
+Let's also apply this organisation to our text-based games. Here's a simple adventure game that's properly organised:
+
+**Note**: Since `Console.ReadLine()` doesn't work in polyglot cells, we'll use a predefined array of actions to simulate player input.
+
+#!csharp
+
+using System;
+
+// Set your actions here (change these to test different scenarios)
+string[] playerActions = { "explore", "fight", "rest", "explore", "fight" };
+
+static int playerHealth = 100;
+static int playerScore = 0;
+
+static void DisplayGameStatus()
+{
+    Console.WriteLine($"Health: {playerHealth} | Score: {playerScore}");
+    Console.WriteLine("=====================================");
+}
+
+static void ProcessPlayerAction(string action)
+{
+    switch (action.ToLower())
+    {
+        case "explore":
+            Console.WriteLine("You venture deeper into the forest...");
+            playerScore += 10;
+            break;
+        case "rest":
+            Console.WriteLine("You rest and regain some health.");
+            playerHealth += 20;
+            if (playerHealth > 100) playerHealth = 100;
+            break;
+        case "fight":
+            Console.WriteLine("You battle a wild creature!");
+            playerHealth -= 30;
+            playerScore += 25;
+            break;
+        default:
+            Console.WriteLine("You don't understand that command.");
+            break;
+    }
+}
+
+static bool IsGameOver()
+{
+    return playerHealth <= 0;
+}
+
+// Clean game loop using our organised methods
+Console.WriteLine("=== Forest Adventure ===");
+
+int actionIndex = 0;
+while (!IsGameOver() && actionIndex < playerActions.Length)
+{
+    DisplayGameStatus();
+    Console.WriteLine("What do you want to do?");
+    Console.WriteLine("Commands: explore, rest, fight, quit");
+    
+    string input = playerActions[actionIndex];
+    Console.WriteLine($"Action chosen: {input}");
+    
+    if (input.ToLower() == "quit")
+        break;
+        
+    ProcessPlayerAction(input);
+    actionIndex++;
+    Console.WriteLine();
+}
+
+if (IsGameOver())
+{
+    Console.WriteLine("Game Over! You were defeated.");
+}
+else if (actionIndex >= playerActions.Length)
+{
+    Console.WriteLine("Adventure completed!");
+}
+
+Console.WriteLine($"Final Score: {playerScore}");
+
+#!markdown
+
+---
+
+## 7. Challenge: Organise Your Own Game
+
+Your turn! Take the messy code below and reorganise it using methods. The game should have:
+
+1. **`HandleInput()`** method for player movement
+2. **`UpdateStars()`** method for moving the stars  
+3. **`DrawEverything()`** method for all drawing
+4. **`CheckCollisions()`** method to see if player touches a star
+
+### The Messy Code to Fix:
+
+#!csharp
+
+#r "nuget: Raylib-cs, 7.0.1"
+
+#!csharp
+
+using Raylib_cs;
+
+Raylib.InitWindow(800, 600, "Messy Star Game - Fix Me!");
+
+float playerX = 400, playerY = 300;
+float starX = 200, starY = 100;
+int score = 0;
+bool gameRunning = true;
+
+while (!Raylib.WindowShouldClose() && gameRunning)
+{
+    // Input - MOVE THIS TO HandleInput() method
+    if (Raylib.IsKeyDown(KeyboardKey.A)) playerX -= 4;
+    if (Raylib.IsKeyDown(KeyboardKey.D)) playerX += 4;
+    if (Raylib.IsKeyDown(KeyboardKey.W)) playerY -= 4;
+    if (Raylib.IsKeyDown(KeyboardKey.S)) playerY += 4;
+    
+    // Star movement - MOVE THIS TO UpdateStars() method
+    starY += 2;
+    if (starY > 600) { starY = -20; starX = Raylib.GetRandomValue(50, 750); }
+    
+    // Collision - MOVE THIS TO CheckCollisions() method
+    float distance = (float)Math.Sqrt((playerX - starX) * (playerX - starX) + (playerY - starY) * (playerY - starY));
+    if (distance < 30) { score++; starY = -20; starX = Raylib.GetRandomValue(50, 750); }
+    
+    // Drawing - MOVE THIS TO DrawEverything() method
+    Raylib.BeginDrawing();
+    Raylib.ClearBackground(Color.Black);
+    Raylib.DrawCircle((int)playerX, (int)playerY, 20, Color.Blue);
+    Raylib.DrawCircle((int)starX, (int)starY, 15, Color.Yellow);
+    Raylib.DrawText($"Score: {score}", 10, 10, 30, Color.White);
+    Raylib.DrawText("WASD to move, collect stars!", 10, 50, 20, Color.LightGray);
+    Raylib.EndDrawing();
+    
+    if (score >= 10) gameRunning = false;
+}
+
+if (score >= 10) Console.WriteLine("You win! Great job!");
+
+Raylib.CloseWindow();
+
+#!markdown
+
+### Your Task:
+1. Create the four methods mentioned above
+2. Move the appropriate code from the main loop into each method
+3. Make sure your organised version works exactly the same as the messy version
+4. Test it to make sure stars still fall, collision works, and the score updates correctly
+
+### Hints:
+- You'll need to make variables `static` so methods can access them
+- Remember to call `Raylib.BeginDrawing()` and `Raylib.EndDrawing()` in your draw method
+- Your main loop should be very clean: just four method calls!
+
+---
+
+## 8. What's Next?
+
+In our next session, we'll learn about **classes and objects** - an even more powerful way to organise our code. Instead of just grouping code into methods, we'll group related data and methods together into objects like `Player`, `Enemy`, and `Star`.
+
+This will let us create multiple players or enemies easily, each with their own position, health, and behaviour. It's the foundation of modern game programming!
+
+---
+
+## Key Concepts Learned:
+- **Code Organisation**: Breaking large blocks of code into focused methods
+- **Standard Game Loop**: HandleInput() → UpdateGame() → DrawGame()
+- **Method Parameters**: Making methods flexible and reusable
+- **Professional Practices**: Following patterns used in real game development
+
+Great job on learning how to write cleaner, more organised code! 🎮

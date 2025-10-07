@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.dotnet-interactive-vscode",  // Polyglot Notebooks
+    "ms-python.python",
+    "ms-toolsai.jupyter"
+  ],
+  "unwantedRecommendations": [
+    "somepublisher.legacy-csharp-extension"
+  ]
+}
