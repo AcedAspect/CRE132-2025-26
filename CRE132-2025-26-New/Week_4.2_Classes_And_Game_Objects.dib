@@ -83,8 +83,8 @@ public class Player
 }
 
 // Now let's create actual Player objects (instances of the class)
-Player player1 = new Player("Alice", 100, 200);
-Player player2 = new Player("Bob", 300, 150);
+Player player1 = new Player("Bob", 300, 150);
+Player player2 = new Player("Alice", 100, 200);
 
 // Each player is separate with their own data
 player1.DisplayInfo();

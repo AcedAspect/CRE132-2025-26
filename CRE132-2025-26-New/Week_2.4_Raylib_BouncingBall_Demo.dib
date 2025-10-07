@@ -196,7 +196,7 @@ static void DrawEnemies(float[] enemyX, float[] enemyY)
 {
     for (int i = 0; i < enemyX.Length; i++)
     {
-        Raylib.DrawCircle((int)enemyX[i], (int)enemyY[i], 15, Color.RED);
+        Raylib.DrawCircle((int)enemyX[i], (int)enemyY[i], 15, Color.Red);
     }
 }
 
@@ -211,17 +211,17 @@ float[] enemyY = {100, 500, 400};
 while (!Raylib.WindowShouldClose())
 {
     // Simple input
-    if (Raylib.IsKeyDown(KeyboardKey.Left)) playerX -= 3;
-    if (Raylib.IsKeyDown(KeyboardKey.Right)) playerX += 3;
+    if (Raylib.IsKeyDown(KeyboardKey.Left)) playerX -= 1;
+    if (Raylib.IsKeyDown(KeyboardKey.Right)) playerX += 1;
     
     Raylib.BeginDrawing();
     Raylib.ClearBackground(Color.DarkGreen);
     
     // Use our flexible methods
-    DrawPlayer(playerX, playerY, Color.BLUE);
+    DrawPlayer(playerX, playerY, Color.Blue);
     DrawEnemies(enemyX, enemyY);
     
-    Raylib.DrawText("Left/Right arrows to move", 10, 10, 20, Color.WHITE);
+    Raylib.DrawText("Left/Right arrows to move", 10, 10, 20, Color.White);
     
     Raylib.EndDrawing();
 }

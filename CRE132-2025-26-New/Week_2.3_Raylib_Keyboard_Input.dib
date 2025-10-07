@@ -98,14 +98,14 @@ while (!Raylib.WindowShouldClose())
     {
         playerY += playerSpeed;
     }
-
+    Raylib.DrawText("Use the arrow keys to move the box!", 10, 10, 20, Color.Black);
     // --- DRAWING ---
     Raylib.BeginDrawing();
-    Raylib.ClearBackground(Color.White);
+    Raylib.ClearBackground(Color.SkyBlue);
 
-    Raylib.DrawRectangle(playerX - 25, playerY - 25, 50, 50, Color.Blue);
+    Raylib.DrawRectangle(playerX - 25, playerY - 25, 50, 50, Color.Red);
 
-    Raylib.DrawText("Use the arrow keys to move the box!", 10, 10, 20, Color.Black);
+    
 
     Raylib.EndDrawing();
 }

@@ -38,9 +38,12 @@ Let's see an example that prints the numbers 0 through 9.
 #!csharp
 
 // i starts at 0; loop as long as i is less than 10; add 1 to i after each loop
-for (int i = 0; i < 10; i++)
+int addition= 0;
+for (int i = 0; i < 21; i++)
 {
     Console.WriteLine("The current number is: " + i);
+    addition += i;
+    Console.WriteLine("the addition is "+ addition);
 }
 
 #!markdown
@@ -149,7 +152,7 @@ After the inner loop finishes drawing one full row, the outer loop will call `Co
 
 #!csharp
 
-int size = 5;
+int size = 10;
 
 // The outer loop handles the rows
 for (int y = 0; y < size; y++)
@@ -182,6 +185,19 @@ for (int y = 0; y < size; y++)
 #!csharp
 
 // Your triangle-drawing code goes here!
+int size = 10;
+
+// The outer loop handles the rows
+for (int y = 0; y < size; y++)
+{
+    // The inner loop handles the columns for each row
+    for (int x = 0; x< y; x++)
+    {
+        Console.Write("# "); // Write a character
+    }
+    // After the inner loop finishes, go to the next line
+    Console.WriteLine(); 
+}
 
 #!markdown
 
@@ -234,9 +250,9 @@ while (!Raylib.WindowShouldClose())
     Raylib.BeginDrawing();
     Raylib.ClearBackground(Color.DarkBlue);
 
-    for (int y = 0; y < screenHeight; y += spacing)
+    for (int y = 25; y < screenHeight; y += spacing)
     {
-        for (int x = 0; x < screenWidth; x += spacing)
+        for (int x = 25; x < screenWidth; x += spacing)
         {
             Raylib.DrawCircle(x, y, 10, Color.Gold);
         }
