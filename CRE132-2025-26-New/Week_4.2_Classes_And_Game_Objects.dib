@@ -93,7 +93,7 @@ player2.DisplayInfo();
 Console.WriteLine("\n--- Game Events ---");
 
 // Players can perform actions independently
-player1.TakeDamage(25);
+player2.TakeDamage(25);
 player2.Move(400, 100);
 player1.TakeDamage(10);
 
@@ -364,6 +364,40 @@ public class ClassName
 #!csharp
 
 // Write your Enemy class here:
+public class Enemy
+{
+    public string Name;
+    public int Health;
+    public int attackPower;
+
+    public Enemy(string name)
+    {
+        Name = name;
+        Health = 50;
+        attackPower = 15;
+    }
+    public void TakeDamage(int damage)
+    {
+        Health -= damage;
+        Console.WriteLine($"{Name} takes {damage} damage! Health now: {Health}");
+    }
+    public void DisplayStats()
+    {
+        Console.WriteLine($"Enemy: {Name} | Health: {Health} | Attack Power: {attackPower}");
+    }
+    public bool IsAlive()
+    {
+        if (Health > 0)
+        {
+            return true;
+        }
+        else 
+        {
+            return false;
+        }
+    }
+
+}
 // TODO: Create the Enemy class with all required properties, constructor, and methods
 
 
