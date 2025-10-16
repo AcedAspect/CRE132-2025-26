@@ -551,7 +551,6 @@ using System.Collections.Generic;
 
 // TODO: Create your Enemy class here
 
-// TODO: Create your wave management system here
 
 // Test your wave system:
 Console.WriteLine("=== Testing Enemy Wave System ===");
